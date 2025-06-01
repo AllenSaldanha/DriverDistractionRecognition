@@ -2,7 +2,7 @@ import torch
 import cv2
 from ultralytics import YOLO
 
-class YOLOv5Detector:
+class YOLOv8Detector:
     def __init__(self, device=None):
         self.device = device if device else ('cuda' if torch.cuda.is_available() else 'cpu')
         # Load model from TorchHub
@@ -27,5 +27,8 @@ class YOLOv5Detector:
     def get_keypoints(self, results):
         # Extract keypoints from the first result
         keypoints = results[0].keypoints
-        return keypoints if keypoints is not None else None
+        if keypoints is None or keypoints.xy is None or len(keypoints.xy) == 0:
+            return None
+        # keypoints.xy is a tensor of shape (N, 17, 2) for N detected persons
+        return keypoints.xy  # Returns list-like tensor of (17, 2) arrays for each person
 

@@ -1,0 +1,1 @@
+from src.pose_detector import YOLOv8Detector

@@ -15,6 +15,6 @@ dataset = DriverActivityDataset(
 
 dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
 
-for imgs, labels in dataloader:
+for frame, labels in dataloader:
     # training step here
     print(labels)

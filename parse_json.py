@@ -13,7 +13,7 @@ level_names = {
 import json
 
 def load_json_file():
-    with open("AACV dataset\dmd-dataset-rgb_ir-gA-1\dmd\gA\/1\s1\gA_1_s1_2019-03-08T09;31;15+01;00_rgb_ann_distraction.json","r") as file:
+    with open("dataset/dmd/gA/1/s1/gA_1_s1_2019-03-08T09;31;15+01;00_rgb_ann_distraction.json","r") as file:
         data = json.load(file)
 
     json_text = data["openlabel"]

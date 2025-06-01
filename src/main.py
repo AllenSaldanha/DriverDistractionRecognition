@@ -9,6 +9,11 @@ def main():
     
     for frame in loader:
         results = detector.predict(frame)
+        keypoints = detector.get_keypoints(results)
+        
+        if keypoints is not None:
+            for person_kpts in keypoints.xy:
+                print("Keypoints:", person_kpts.cpu().numpy().tolist())  # Convert to list for printing
         frame = detector.draw_results(frame, results)
         cv2.imshow("YOLOv5 Detection", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):

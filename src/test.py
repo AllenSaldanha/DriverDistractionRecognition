@@ -17,4 +17,4 @@ dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
 
 for frame, labels in dataloader:
     # training step here
-    print(labels)
+    print(frame, labels)

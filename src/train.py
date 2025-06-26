@@ -33,8 +33,8 @@ def main():
     train_size = len(dataset) - val_size
     train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
-    train_loader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=5, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=6, shuffle=False, num_workers=5, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=8, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=6, shuffle=False, num_workers=8, pin_memory=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     

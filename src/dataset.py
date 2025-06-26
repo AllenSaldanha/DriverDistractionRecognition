@@ -14,7 +14,10 @@ class DriverActivityDataset(Dataset):
         # Load OpenLabel JSON
         with open(annotation_json_path, 'r') as f:
             data = json.load(f)
-        self.openlabel_data = data["openlabel"]
+        try:
+            self.openlabel_data = data["openlabel"]
+        except KeyError:
+            raise ValueError(f"Missing 'openlabel' key in {annotation_json_path}")
 
         # Get total number of frames from video
         cap = cv2.VideoCapture(video_path)
@@ -64,8 +67,13 @@ class DriverActivityDataset(Dataset):
         for i in range(self.num_frames):
             cap.set(cv2.CAP_PROP_POS_FRAMES, idx + i)
             ret, frame = cap.read()
-            if not ret:
-                raise RuntimeError(f"Could not read frame {idx + i} from {self.video_path}")
+            if not ret or frame is None:
+                print(f"[Warning] Could not read frame {idx + i} from {self.video_path}. Returning dummy.")
+                dummy = torch.zeros((3, 224, 224))
+                frames.append(dummy)
+                labels.append(torch.zeros(self.num_classes))
+                continue
+            
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             pil_image = Image.fromarray(frame)
 

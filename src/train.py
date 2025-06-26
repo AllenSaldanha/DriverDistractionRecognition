@@ -4,8 +4,11 @@ import torch.optim as optim
 import torchvision.transforms as T
 from torch.utils.data import DataLoader
 
+import logging
 from dataset import DriverActivityDataset
 from models.I3D import I3D
+
+logging.basicConfig(filename='training.log', level=logging.INFO)
 
 NUM_CLASSES = 12
 EPOCHS = 10
@@ -45,9 +48,9 @@ for epoch in range(EPOCHS):
 
         running_loss += loss.item()
         if (i + 1) % 10 == 0 or (i + 1) == len(dataloader):
-            print(f"Epoch [{epoch+1}/{EPOCHS}], Step [{i+1}/{len(dataloader)}], Loss: {loss.item():.4f}")
+            logging.info(f"Epoch [{epoch+1}/{EPOCHS}], Step [{i+1}/{len(dataloader)}], Loss: {loss.item():.4f}")
 
-    print(f"Epoch [{epoch+1}] Loss: {running_loss / len(dataloader):.4f}")
+    logging.info(f"Epoch [{epoch+1}] Loss: {running_loss / len(dataloader):.4f}")
     
 torch.save(model.state_dict(), 'i3d_driver_activity_rgb.pth')
-print("Model saved.")
+logging.info("Model saved.")

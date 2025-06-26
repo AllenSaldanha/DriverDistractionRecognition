@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as T
 from torch.utils.data import DataLoader
+from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard import SummaryWriter
 
 import logging
@@ -38,6 +39,7 @@ def main():
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
+    scheduler = StepLR(optimizer, step_size=3, gamma=0.1)
     best_loss = float('inf')
     writer = SummaryWriter(log_dir='runs/driver_activity_experiment')
 
@@ -60,7 +62,9 @@ def main():
 
         epoch_loss = running_loss / len(dataloader)
         logging.info(f"Epoch [{epoch+1}] Loss: {epoch_loss:.4f}")
+        scheduler.step()
         writer.add_scalar('Loss/train', epoch_loss, epoch)
+        writer.add_scalar('LearningRate', scheduler.get_last_lr()[0], epoch)
         writer.flush()
 
         if epoch_loss < best_loss:

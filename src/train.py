@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as T
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard import SummaryWriter
 
@@ -28,7 +28,13 @@ def main():
         num_frames=16
     )
 
-    dataloader = DataLoader(dataset, batch_size=6, shuffle=True, num_workers=5, pin_memory=True)
+    # Split dataset into training and validation sets (80%-20%)
+    val_size = int(0.2 * len(dataset))
+    train_size = len(dataset) - val_size
+    train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+
+    train_loader = DataLoader(train_dataset, batch_size=6, shuffle=True, num_workers=5, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=6, shuffle=False, num_workers=5, pin_memory=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
@@ -44,12 +50,13 @@ def main():
     writer = SummaryWriter(log_dir='runs/driver_activity_experiment')
 
     for epoch in range(EPOCHS):
+        # Training phase
         model.train()
         running_loss = 0.0
-        for i, (frame, labels) in enumerate(dataloader):
+        for i, (frame, labels) in enumerate(train_loader):
             frame = frame.to(device, non_blocking=True)
             labels = labels.to(device, non_blocking=True)
-            # Training steps
+
             optimizer.zero_grad()
             outputs = model(frame)
             loss = criterion(outputs, labels)
@@ -57,24 +64,42 @@ def main():
             optimizer.step()
 
             running_loss += loss.item()
-            if (i + 1) % 10 == 0 or (i + 1) == len(dataloader):
-                logging.info(f"Epoch [{epoch+1}/{EPOCHS}], Step [{i+1}/{len(dataloader)}], Loss: {loss.item():.4f}")
+            if (i + 1) % 10 == 0 or (i + 1) == len(train_loader):
+                logging.info(f"Epoch [{epoch+1}/{EPOCHS}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}")
 
-        epoch_loss = running_loss / len(dataloader)
-        logging.info(f"Epoch [{epoch+1}] Loss: {epoch_loss:.4f}")
-        scheduler.step()
+        epoch_loss = running_loss / len(train_loader)
+        logging.info(f"Epoch [{epoch+1}] Training Loss: {epoch_loss:.4f}")
         writer.add_scalar('Loss/train', epoch_loss, epoch)
+
+        # Validation phase
+        model.eval()
+        val_loss = 0.0
+        with torch.no_grad():
+            for frame, labels in val_loader:
+                frame = frame.to(device, non_blocking=True)
+                labels = labels.to(device, non_blocking=True)
+                outputs = model(frame)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
+
+        val_loss /= len(val_loader)
+        logging.info(f"Epoch [{epoch+1}] Validation Loss: {val_loss:.4f}")
+        writer.add_scalar('Loss/val', val_loss, epoch)
+
+        # Save best model checkpoint
+        if val_loss < best_loss:
+            best_loss = val_loss
+            torch.save(model.state_dict(), 'best_model.pth')
+            logging.info(f"Saved best model at epoch {epoch+1} with val loss {val_loss:.4f}")
+
+        scheduler.step()
         writer.add_scalar('LearningRate', scheduler.get_last_lr()[0], epoch)
         writer.flush()
 
-        if epoch_loss < best_loss:
-            best_loss = epoch_loss
-            torch.save(model.state_dict(), 'best_model.pth')
-            logging.info(f"Saved best model at epoch {epoch+1} with loss {epoch_loss:.4f}")
-        
-    torch.save(model.state_dict(), 'i3d_driver_activity_rgb.pth')
-    logging.info("Model saved.")
+    # Save final model checkpoint
+    torch.save(model.state_dict(), 'final_model.pth')
+    logging.info("Final model saved.")
     writer.close()
-    
+
 if __name__ == '__main__':
     main()

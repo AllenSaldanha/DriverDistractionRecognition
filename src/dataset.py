@@ -6,10 +6,11 @@ import torchvision.transforms as T
 from PIL import Image
 
 class DriverActivityDataset(Dataset):
-    def __init__(self, video_path, annotation_json_path, transform=None):
+    def __init__(self, video_path, annotation_json_path, clip_len, transform=None):
         self.video_path = video_path
         self.transform = transform if transform is not None else T.ToTensor()
-
+        self.clip_len = clip_len
+        
         # Load OpenLabel JSON
         with open(annotation_json_path, 'r') as f:
             data = json.load(f)
@@ -51,17 +52,35 @@ class DriverActivityDataset(Dataset):
 
     def __getitem__(self, idx):
         cap = cv2.VideoCapture(self.video_path)
-        cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
-        ret, frame = cap.read()
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        # Adjust starting index so we don’t go out of bounds
+        if idx + self.clip_len > total_frames:
+            idx = max(0, total_frames - self.clip_len)
+
+        frames = []
+        labels = []
+
+        for i in range(self.clip_len):
+            cap.set(cv2.CAP_PROP_POS_FRAMES, idx + i)
+            ret, frame = cap.read()
+            if not ret:
+                raise RuntimeError(f"Could not read frame {idx + i} from {self.video_path}")
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(frame)
+
+            if self.transform:
+                pil_image = self.transform(pil_image)
+
+            frames.append(pil_image)
+
+            label = self._extract_info_for_frame(idx + i, self.actions_data)
+            labels.append(label)
+
         cap.release()
 
-        if not ret:
-            raise RuntimeError(f"Could not read frame {idx} from {self.video_path}")
+        # Shape: [clip_len, C, H, W] → [C, clip_len, H, W]
+        clip_tensor = torch.stack(frames).permute(1, 0, 2, 3)
+        label_tensor = torch.stack(labels).max(dim=0).values
 
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        pil_image = Image.fromarray(frame)
-        if self.transform:
-            pil_image = self.transform(pil_image)
-        action_labels = self._extract_info_for_frame(idx, self.actions_data)
-
-        return pil_image, action_labels
+        return clip_tensor, label_tensor

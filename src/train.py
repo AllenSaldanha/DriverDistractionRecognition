@@ -32,6 +32,7 @@ model = I3D(num_classes=NUM_CLASSES).to(device)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
+best_loss = float('inf')
 
 for epoch in range(EPOCHS):
     model.train()
@@ -50,7 +51,14 @@ for epoch in range(EPOCHS):
         if (i + 1) % 10 == 0 or (i + 1) == len(dataloader):
             logging.info(f"Epoch [{epoch+1}/{EPOCHS}], Step [{i+1}/{len(dataloader)}], Loss: {loss.item():.4f}")
 
-    logging.info(f"Epoch [{epoch+1}] Loss: {running_loss / len(dataloader):.4f}")
+    epoch_loss = running_loss / len(dataloader)
+    logging.info(f"Epoch [{epoch+1}] Loss: {epoch_loss:.4f}")
+    
+    # Save best model
+    if epoch_loss < best_loss:
+        best_loss = epoch_loss
+        torch.save(model.state_dict(), 'best_model.pth')
+        logging.info(f"Saved best model at epoch {epoch+1} with loss {epoch_loss:.4f}")
     
 torch.save(model.state_dict(), 'i3d_driver_activity_rgb.pth')
 logging.info("Model saved.")

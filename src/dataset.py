@@ -4,91 +4,95 @@ import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as T
 from PIL import Image
+import os
 
 class DriverActivityDataset(Dataset):
-    def __init__(self, video_path, annotation_json_path, num_frames, transform=None):
-        self.video_path = video_path
+    def __init__(self, video_annotation_pairs, num_frames=16, transform=None):
+        self.pairs = video_annotation_pairs
         self.transform = transform if transform is not None else T.ToTensor()
         self.num_frames = num_frames
-        
-        # Load OpenLabel JSON
-        with open(annotation_json_path, 'r') as f:
-            data = json.load(f)
-        try:
-            self.openlabel_data = data["openlabel"]
-        except KeyError:
-            raise ValueError(f"Missing 'openlabel' key in {annotation_json_path}")
 
-        # Get total number of frames from video
+        self.samples = []
+        self.action_classes_set = set()
+        
+        self.video_meta = []  # [(video_path, ann_path, total_frames, actions_data)]
+        for video_path, ann_path in self.pairs:
+            with open(ann_path, 'r') as f:
+                try:
+                    data = json.load(f)["openlabel"]
+                except KeyError:
+                    raise ValueError(f"Missing 'openlabel' key in {ann_path}")
+
+            actions = data.get("actions", {})
+            total_frames = self._get_total_frames(video_path)
+            self.video_meta.append((video_path, ann_path, total_frames, actions))
+
+            for action_id, action_info in actions.items():
+                self.action_classes_set.add(action_info.get("type", "Unknown"))
+
+        self.action_classes = sorted(list(self.action_classes_set))
+        self.num_classes = len(self.action_classes)
+        self.action_to_idx = {name: i for i, name in enumerate(self.action_classes)}
+
+        for video_path, ann_path, total_frames, _ in self.video_meta:
+            for start_frame in range(0, total_frames - self.num_frames + 1, self.num_frames):
+                self.samples.append((video_path, ann_path, start_frame))
+
+    def _get_total_frames(self, video_path):
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
-            raise RuntimeError(f"Could not open video {video_path}")
-        self.total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            raise RuntimeError(f"Failed to open {video_path}")
+        total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         cap.release()
-
-        # Preprocess object/action annotations
-        self.objects_data = self.openlabel_data.get("objects", {})
-        self.actions_data = self.openlabel_data.get("actions", {})
-
-        # Define all possible action labels
-        self.action_classes = sorted(list(set(
-            obj_info.get("type", "Unknown") for obj_id, obj_info in self.actions_data.items()
-        )))
-        self.num_classes = len(self.action_classes)
-        self.action_to_idx = {action: idx for idx, action in enumerate(self.action_classes)}
+        return total
 
     def __len__(self):
-        return self.total_frames
+        return len(self.samples)
 
-    def _extract_info_for_frame(self, frame_number, object_dict):
-        """Return multi-hot encoded tensor for actions active at the frame."""
-        labels = torch.zeros(self.num_classes, dtype=torch.float32)
-        for obj_id, obj_info in object_dict.items():
-            label = obj_info.get("type", "Unknown")
-            intervals = obj_info.get("frame_intervals", [])
-            for interval in intervals:
-                if interval["frame_start"] <= frame_number <= interval["frame_end"]:
+    def _extract_labels_for_frame(self, frame_idx, actions_data):
+        label_vec = torch.zeros(self.num_classes, dtype=torch.float32)
+        for action_id, info in actions_data.items():
+            label = info.get("type", "Unknown")
+            for interval in info.get("frame_intervals", []):
+                if interval["frame_start"] <= frame_idx <= interval["frame_end"]:
                     if label in self.action_to_idx:
-                        labels[self.action_to_idx[label]] = 1.0
-                    break  # Only need to match one interval
-        return labels
+                        label_vec[self.action_to_idx[label]] = 1.0
+                    break
+        return label_vec
 
     def __getitem__(self, idx):
-        cap = cv2.VideoCapture(self.video_path)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        video_path, ann_path, start_frame = self.samples[idx]
 
-        # Adjust starting index so we don’t go out of bounds
-        if idx + self.num_frames > total_frames:
-            idx = max(0, total_frames - self.num_frames)
+        # Load annotations
+        with open(ann_path, 'r') as f:
+            actions_data = json.load(f)["openlabel"].get("actions", {})
 
+        # Open video
+        cap = cv2.VideoCapture(video_path)
         frames = []
         labels = []
 
         for i in range(self.num_frames):
-            cap.set(cv2.CAP_PROP_POS_FRAMES, idx + i)
+            cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame + i)
             ret, frame = cap.read()
             if not ret or frame is None:
-                print(f"[Warning] Could not read frame {idx + i} from {self.video_path}. Returning dummy.")
+                print(f"[Warning] Could not read frame {start_frame + i} from {video_path}")
                 dummy = torch.zeros((3, 224, 224))
                 frames.append(dummy)
                 labels.append(torch.zeros(self.num_classes))
                 continue
-            
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            pil_image = Image.fromarray(frame)
+            image = Image.fromarray(frame)
 
             if self.transform:
-                pil_image = self.transform(pil_image)
+                image = self.transform(image)
 
-            frames.append(pil_image)
-
-            label = self._extract_info_for_frame(idx + i, self.actions_data)
-            labels.append(label)
+            frames.append(image)
+            labels.append(self._extract_labels_for_frame(start_frame + i, actions_data))
 
         cap.release()
 
-        # Shape: [clip_len, C, H, W] → [C, clip_len, H, W]
-        frames_tensor = torch.stack(frames).permute(1, 0, 2, 3)
-        label_tensor = torch.stack(labels).max(dim=0).values
+        video_tensor = torch.stack(frames).permute(1, 0, 2, 3)  # [C, T, H, W]
+        label_tensor = torch.stack(labels).max(dim=0).values    # Multi-hot vector
 
-        return frames_tensor, label_tensor
+        return video_tensor, label_tensor

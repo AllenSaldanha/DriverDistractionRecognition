@@ -7,13 +7,15 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard import SummaryWriter
 
 import logging
+import argparse
 from dataset import DriverActivityDataset
 from models.I3D import I3D
+from utils.video_annotation_pairs import collect_video_annotation_pairs
 
 logging.basicConfig(filename='training.log', level=logging.INFO)
 
-def main():
-    NUM_CLASSES = 12
+def main(pairs):
+    NUM_CLASSES = 21
     EPOCHS = 10
 
     transform = T.Compose([
@@ -22,8 +24,7 @@ def main():
     ])
 
     dataset = DriverActivityDataset(
-        video_path='./dataset/dmd/gA/1/s1/gA_1_s1_2019-03-08T09;31;15+01;00_rgb_face.mp4',
-        annotation_json_path='./dataset/dmd/gA/1/s1/gA_1_s1_2019-03-08T09;31;15+01;00_rgb_ann_distraction.json',
+        video_annotation_pairs=pairs,
         transform=transform,
         num_frames=16
     )
@@ -43,7 +44,7 @@ def main():
     model = model.to(device)
     print(f"Model device: {next(model.parameters()).device}")
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
     scheduler = StepLR(optimizer, step_size=3, gamma=0.1)
     best_loss = float('inf')
@@ -102,4 +103,11 @@ def main():
     writer.close()
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description="Driver Activity Dataset Loader")
+    parser.add_argument("--root_dir", type=str, required=True, help="Path to dataset root")
+    args = parser.parse_args()
+
+    pairs = collect_video_annotation_pairs(args.root_dir)
+    print(f"Found {len(pairs)} valid video-annotation pairs.")
+
+    main(pairs)

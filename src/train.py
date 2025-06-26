@@ -27,10 +27,14 @@ def main():
         num_frames=16
     )
 
-    dataloader = DataLoader(dataset, batch_size=6, shuffle=True, num_workers=2)
+    dataloader = DataLoader(dataset, batch_size=6, shuffle=True, num_workers=5, pin_memory=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = I3D(num_classes=NUM_CLASSES).to(device)
+    
+    # Model initialization
+    model = I3D(num_classes=NUM_CLASSES)
+    model = model.to(device)
+    print(f"Model device: {next(model.parameters()).device}")
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
@@ -41,9 +45,9 @@ def main():
         model.train()
         running_loss = 0.0
         for i, (frame, labels) in enumerate(dataloader):
-            # Shape: [batch, channels, frames, h, w]
-            frame = frame.to(device)
-            labels = labels.to(device)
+            frame = frame.to(device, non_blocking=True)
+            labels = labels.to(device, non_blocking=True)
+            # Training steps
             optimizer.zero_grad()
             outputs = model(frame)
             loss = criterion(outputs, labels)

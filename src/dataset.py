@@ -6,10 +6,10 @@ import torchvision.transforms as T
 from PIL import Image
 
 class DriverActivityDataset(Dataset):
-    def __init__(self, video_path, annotation_json_path, clip_len, transform=None):
+    def __init__(self, video_path, annotation_json_path, num_frames, transform=None):
         self.video_path = video_path
         self.transform = transform if transform is not None else T.ToTensor()
-        self.clip_len = clip_len
+        self.num_frames = num_frames
         
         # Load OpenLabel JSON
         with open(annotation_json_path, 'r') as f:
@@ -55,13 +55,13 @@ class DriverActivityDataset(Dataset):
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
         # Adjust starting index so we don’t go out of bounds
-        if idx + self.clip_len > total_frames:
-            idx = max(0, total_frames - self.clip_len)
+        if idx + self.num_frames > total_frames:
+            idx = max(0, total_frames - self.num_frames)
 
         frames = []
         labels = []
 
-        for i in range(self.clip_len):
+        for i in range(self.num_frames):
             cap.set(cv2.CAP_PROP_POS_FRAMES, idx + i)
             ret, frame = cap.read()
             if not ret:
@@ -80,7 +80,7 @@ class DriverActivityDataset(Dataset):
         cap.release()
 
         # Shape: [clip_len, C, H, W] → [C, clip_len, H, W]
-        clip_tensor = torch.stack(frames).permute(1, 0, 2, 3)
+        frames_tensor = torch.stack(frames).permute(1, 0, 2, 3)
         label_tensor = torch.stack(labels).max(dim=0).values
 
-        return clip_tensor, label_tensor
+        return frames_tensor, label_tensor

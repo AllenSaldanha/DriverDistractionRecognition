@@ -8,7 +8,6 @@ from models.I3D import I3D
 NUM_CLASSES = 12
 EPOCHS = 10
 LEARNING_RATE = 1e-4
-NUM_FRAMES = 32
 
 transform = T.Compose([
     T.Resize((224, 224)),
@@ -19,7 +18,7 @@ dataset = DriverActivityDataset(
     video_path='./dataset/dmd/gA/1/s1/gA_1_s1_2019-03-08T09;31;15+01;00_rgb_face.mp4',
     annotation_json_path='./dataset/dmd/gA/1/s1/gA_1_s1_2019-03-08T09;31;15+01;00_rgb_ann_distraction.json',
     transform=transform,
-    clip_len=16
+    num_frames=16
 )
 
 dataloader = DataLoader(dataset, batch_size=6, shuffle=True)

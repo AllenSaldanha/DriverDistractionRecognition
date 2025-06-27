@@ -389,7 +389,7 @@ class I3D(torch.nn.Module):
         # out_logits = out
         # out = self.softmax(out_logits)
         #return out, out_logits
-        print(f"Out Raw Logits: {out}")
+        # print(f"Out Raw Logits: {out}")
         return out
 
     def load_tf_weights(self, sess):

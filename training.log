@@ -37,3 +37,7 @@ INFO:root:Epoch [1/10], Step [20/322], Loss: 0.6981
 INFO:root:Epoch [1/10], Step [30/322], Loss: 0.6830
 INFO:root:Epoch [1/10], Step [40/322], Loss: 0.6875
 INFO:root:Epoch [1/10], Step [50/322], Loss: 0.6993
+INFO:root:Epoch [1/6], Step [10/322], Loss: 0.5904
+INFO:root:Epoch [1/6], Step [20/322], Loss: 0.4389
+INFO:root:Epoch [1/6], Step [30/322], Loss: 0.3617
+INFO:root:Epoch [1/6], Step [40/322], Loss: 0.3884

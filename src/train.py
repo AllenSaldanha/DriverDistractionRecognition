@@ -16,7 +16,7 @@ logging.basicConfig(filename='training.log', level=logging.INFO)
 
 def main(pairs):
     NUM_CLASSES = 21
-    EPOCHS = 10
+    EPOCHS = 6
 
     transform = T.Compose([
         T.Resize((224, 224)),
@@ -104,7 +104,7 @@ def main(pairs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Driver Activity Dataset Loader")
-    parser.add_argument("--root_dir", type=str, required=True, help="Path to dataset root")
+    parser.add_argument("--root_dir", default = "./dataset/dmd", type=str, help="Path to dataset root")
     args = parser.parse_args()
 
     pairs = collect_video_annotation_pairs(args.root_dir)

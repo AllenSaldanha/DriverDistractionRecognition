@@ -3,3 +3,5 @@ dataset/dmd
 *.pt
 keypoints/
 runs/
+*.pth
+*.log

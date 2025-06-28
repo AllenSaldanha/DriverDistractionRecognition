@@ -34,6 +34,7 @@ def inference(pair, model_path, output_dir):
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
     model.eval()
+    threshold = 0.5
     
     for video_tensor, label_tensor in dataloader:
         video_tensor = video_tensor.to(device)
@@ -44,6 +45,12 @@ def inference(pair, model_path, output_dir):
             predictions = torch.sigmoid(outputs)
             print(outputs)
             print(predictions)
+            
+            # since multi-class classification, use a threshold to determine the predicted classes
+            pred_probs = predictions.squeeze(0).cpu().numpy()
+            pred_labels = [trained_classes[i] for i, p in enumerate(pred_probs) if p >= threshold]
+
+            print("Predicted Actions:", pred_labels)   
             
 
 if __name__ == '__main__':

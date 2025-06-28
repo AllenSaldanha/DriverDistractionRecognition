@@ -15,7 +15,6 @@ from utils.video_annotation_pairs import collect_video_annotation_pairs
 logging.basicConfig(filename='training.log', level=logging.INFO)
 
 def main(pairs):
-    NUM_CLASSES = 21
     EPOCHS = 6
 
     transform = T.Compose([
@@ -40,7 +39,7 @@ def main(pairs):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     # Model initialization
-    model = I3D(num_classes=NUM_CLASSES)
+    model = I3D(num_classes=dataset.num_classes)
     model = model.to(device)
     print(f"Model device: {next(model.parameters()).device}")
 

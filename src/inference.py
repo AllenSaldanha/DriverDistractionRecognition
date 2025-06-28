@@ -2,13 +2,16 @@ import os
 import argparse
 import torch
 import csv
-from pathlib import Path
+import logging
 
+from pathlib import Path
 import torchvision.transforms as T
 from torch.utils.data import DataLoader
 from dataset import DriverActivityDataset, load_trained_classes
 from utils.video_annotation_pairs import collect_video_annotation_pairs
 from models.I3D import I3D
+
+logging.basicConfig(filename='inference.log', level=logging.INFO)
 
 def inference(pair, model_path):
     # This function should load the model and perform inference on the video clips
@@ -64,7 +67,7 @@ def inference(pair, model_path):
             writer = csv.writer(f)
             writer.writerow(['Frame Start', 'Predicted Labels'])
             writer.writerows(frames_preds)
-        print(f"Saved predictions for {video_name} to {output_file}")
+        logging.info(f"Saved predictions for {video_name} to {output_file}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Driver Activity Inference")

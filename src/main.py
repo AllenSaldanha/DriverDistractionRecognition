@@ -1,4 +1,4 @@
-from inference import FrameLoader
+from frameloader import FrameLoader
 from pose_detector import YOLOv8Detector
 from activity_classifier import DriverActivityClassifier
 import cv2

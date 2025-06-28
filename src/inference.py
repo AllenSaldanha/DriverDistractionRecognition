@@ -4,7 +4,7 @@ import torch
 
 import torchvision.transforms as T
 from torch.utils.data import DataLoader
-from dataset import DriverActivityDataset
+from dataset import DriverActivityDataset, load_trained_classes
 from utils.video_annotation_pairs import collect_video_annotation_pairs
 from models.I3D import I3D
 
@@ -28,7 +28,8 @@ def inference(pair, model_path, output_dir):
     # TODO 
     # Current model has 21 classes, but it was an error
     # Actual classes 22, so change num_classes to dataset.num_classes with the new saved model
-    model = I3D(num_classes=21)
+    trained_classes = load_trained_classes("./src/trained_classes.txt")
+    model = I3D(num_classes=len(trained_classes))
     
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
@@ -38,8 +39,12 @@ def inference(pair, model_path, output_dir):
         video_tensor = video_tensor.to(device)
         label_tensor = label_tensor.to(device)
 
-        print(video_tensor.shape, label_tensor.shape)
-        break
+        with torch.no_grad():
+            outputs = model(video_tensor)
+            predictions = torch.sigmoid(outputs)
+            print(outputs)
+            print(predictions)
+            
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Driver Activity Inference")

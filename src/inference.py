@@ -22,7 +22,6 @@ def inference(pair, model_path, output_dir):
         num_frames=16,
         transform=transform
     )
-    print(dataset.action_classes)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     

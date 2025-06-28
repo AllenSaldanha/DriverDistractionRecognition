@@ -6,6 +6,10 @@ import torchvision.transforms as T
 from PIL import Image
 import os
 
+def load_trained_classes(path):
+    with open(path, "r") as f:
+        return [line.strip() for line in f.readlines()]
+
 class DriverActivityDataset(Dataset):
     def __init__(self, video_annotation_pairs, num_frames=16, transform=None):
         self.pairs = video_annotation_pairs
@@ -13,7 +17,7 @@ class DriverActivityDataset(Dataset):
         self.num_frames = num_frames
 
         self.samples = []
-        self.action_classes_set = set()
+        self.action_classes = load_trained_classes("./src/trained_classes.txt")
         
         self.video_meta = []  # [(video_path, ann_path, total_frames, actions_data)]
         for video_path, ann_path in self.pairs:
@@ -26,13 +30,8 @@ class DriverActivityDataset(Dataset):
             actions = data.get("actions", {})
             total_frames = self._get_total_frames(video_path)
             self.video_meta.append((video_path, ann_path, total_frames, actions))
-
-            for action_id, action_info in actions.items():
-                self.action_classes_set.add(action_info.get("type", "Unknown"))
-
-        self.action_classes = sorted(list(self.action_classes_set))
-        self.num_classes = len(self.action_classes)
-        self.action_to_idx = {name: i for i, name in enumerate(self.action_classes)}
+            self.num_classes = len(self.action_classes)
+            self.action_to_idx = {name: i for i, name in enumerate(self.action_classes)}
 
         for video_path, ann_path, total_frames, _ in self.video_meta:
             for start_frame in range(0, total_frames - self.num_frames + 1, self.num_frames):
@@ -53,10 +52,11 @@ class DriverActivityDataset(Dataset):
         label_vec = torch.zeros(self.num_classes, dtype=torch.float32)
         for action_id, info in actions_data.items():
             label = info.get("type", "Unknown")
+            if label not in self.action_to_idx:
+                continue  # skip unknown labels
             for interval in info.get("frame_intervals", []):
                 if interval["frame_start"] <= frame_idx <= interval["frame_end"]:
-                    if label in self.action_to_idx:
-                        label_vec[self.action_to_idx[label]] = 1.0
+                    label_vec[self.action_to_idx[label]] = 1.0
                     break
         return label_vec
 

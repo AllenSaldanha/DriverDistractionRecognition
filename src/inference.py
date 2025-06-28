@@ -59,6 +59,7 @@ def inference(pair, model_path):
             if video_name not in video_to_frames_preds:
                 video_to_frames_preds[video_name] = []
             video_to_frames_preds[video_name].append(row)
+        logging.info(f"Processed video {i+1}/{len(dataloader)}: {video_name}, Frame Start: {start_frame}, Predicted Labels: {pred_labels}")
             
     # Save predictions to .csv files
     for video_name, frames_preds in video_to_frames_preds.items(): 
@@ -77,6 +78,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     pairs = collect_video_annotation_pairs(args.root_dir)
-    print(f"Found {len(pairs)} valid video-annotation pairs.")
+    logging.info(f"Found {len(pairs)} valid video-annotation pairs.")
 
     inference(pairs, model_path=args.model_path)

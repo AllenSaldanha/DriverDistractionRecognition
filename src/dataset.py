@@ -4,7 +4,6 @@ import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as T
 from PIL import Image
-import os
 
 def load_trained_classes(path):
     with open(path, "r") as f:
@@ -34,6 +33,7 @@ class DriverActivityDataset(Dataset):
             self.action_to_idx = {name: i for i, name in enumerate(self.action_classes)}
 
         for video_path, ann_path, total_frames, _ in self.video_meta:
+            # To make it clips wise, we will sample frames with a step of num_frames
             for start_frame in range(0, total_frames - self.num_frames + 1, self.num_frames):
                 self.samples.append((video_path, ann_path, start_frame))
 

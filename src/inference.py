@@ -22,6 +22,7 @@ def inference(pair, model_path, output_dir):
         num_frames=16,
         transform=transform
     )
+    print(dataset.action_classes)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
@@ -32,10 +33,14 @@ def inference(pair, model_path, output_dir):
     
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
+    model.eval()
     
-    print("Model state dict: ", model.state_dict())
-    
-    
+    for video_tensor, label_tensor in dataloader:
+        video_tensor = video_tensor.to(device)
+        label_tensor = label_tensor.to(device)
+
+        print(video_tensor.shape, label_tensor.shape)
+        break
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Driver Activity Inference")

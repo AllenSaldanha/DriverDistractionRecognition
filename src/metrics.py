@@ -1,52 +1,46 @@
-import pandas as pd
+import os
 import argparse
+import pandas as pd
 
 class Metric:
-    """Utility class for different metrics"""
-    
-    def __init__(self, ground_truth_csv, prediction_log, file_id):
-        self.ground_truth = pd.read_csv(ground_truth_csv)
-        self.predictions = self.parse_predictions(prediction_log)
+    """Metrics for multi-label activity detection in video clips."""
+
+    def __init__(self, ground_truth_csv, prediction_folder):
+        self.ground_truth = None
+        # self.filtered_ground_truth = self.ground_truth[self.ground_truth['file_id'] == file_id]
+        self.predictions = self.parse_predictions(prediction_folder)
         self.segmented_predictions = self.convert_predictions_to_segments(self.predictions)
-        self.file_id = file_id
-        self.activity_classes = list(self.ground_truth['activity'].dropna().unique())
-        self.filtered_ground_truth = self.ground_truth[self.ground_truth['file_id'] == file_id]
-    
+
     @staticmethod
-    
-    def parse_predictions(log_file):
-        predictions = []
-        with open(log_file, 'r') as file:
-            for line in file:
-                try:
-                    # Ensure the line contains the necessary components
-                    if not line.startswith("Frame") or "Predicted Activity:" not in line or "Confidence:" not in line:
-                        print(f"Skipping malformed line: {line.strip()}")
+    def parse_predictions(prediction_folder):
+        """
+        Parse all prediction CSVs in the folder for the given file_id (video stem).
+        Returns a DataFrame with columns: frame, activity, file_id.
+        """
+        records = []
+        for pred_file in os.listdir(prediction_folder):
+            if pred_file.endswith(".csv"):
+                csv_file = os.path.join(prediction_folder, pred_file)
+                df = pd.read_csv(csv_file)
+                for _, row in df.iterrows():
+                    start_frame = int(row['Frame Start'])
+                    label_str = row['Predicted Labels']
+                    if pd.isna(label_str) or label_str.strip() == "":
                         continue
-
-                    # Extract frame number
-                    frame = int(line.split(":")[0].replace("Frame", "").strip())
-
-                    # Extract activity
-                    activity = line.split("Predicted Activity: ")[1].split(", Confidence")[0].strip()
-
-                    # Extract confidence
-                    confidence_str = line.split("Confidence: ")[1].strip().replace("%", "")
-                    confidence = float(confidence_str)
-
-                    predictions.append({'frame': frame, 'activity': activity, 'confidence': confidence})
-
-                except (IndexError, ValueError) as e:
-                    print(f"Skipping line due to error: {line.strip()} -> {e}")
-
-        df = pd.DataFrame(predictions)
-        print("Parsed Predictions DataFrame Columns:", df.columns)  # Debugging
-        #print(df.head())  # Show first few rows for verification
-
-        return df
+                    labels = [label.strip() for label in label_str.split(';') if label.strip()]
+                    for label in labels:
+                        records.append({'frame': start_frame, 'activity': label, 'pred_file': pred_file})
+        return pd.DataFrame(records)
 
     @staticmethod
     def convert_predictions_to_segments(predictions):
+        """
+        Converts frame-level predictions to activity segments.
+        """
+        if predictions.empty:
+            return pd.DataFrame(columns=['frame_start', 'frame_end', 'activity'])
+        # Sort by frame
+        predictions = predictions.sort_values(by='frame')
         segments = []
         current_activity = None
         current_start = None
@@ -100,27 +94,21 @@ class Metric:
             ]
 
             if not matched_prediction.empty:
-                #  True Positive: A prediction exists for this midpoint
-                if chunk_key not in matched_chunks:
-                    metrics[gt_activity]['tp'] += 1
-                    matched_chunks.add(chunk_key)  
-                else:
-                    metrics[gt_activity]['fp'] += 1
+                metrics[gt_activity]['tp'] += 1
             else:
-                # False Negative: No correct prediction found for this activity midpoint
                 metrics[gt_activity]['fn'] += 1
 
         # Count False Positives for unmatched predictions
         for _, pred in self.segmented_predictions.iterrows():
             pred_activity = pred['activity']
-
-            if pred_activity in metrics and metrics[pred_activity]['tp'] > 0:
-                continue
-
-            if pred_activity not in metrics:
-                continue
-            
-            metrics[pred_activity]['fp'] += 1
+            pred_midpoint = (pred['frame_start'] + pred['frame_end']) // 2
+            matched_gt = self.filtered_ground_truth[
+                (self.filtered_ground_truth['frame_start'] <= pred_midpoint) &
+                (self.filtered_ground_truth['frame_end'] >= pred_midpoint) &
+                (self.filtered_ground_truth['activity'] == pred_activity)
+            ]
+            if matched_gt.empty:
+                metrics[pred_activity]['fp'] += 1
 
         precision, recall = {}, {}
         for cls in all_activities:
@@ -136,113 +124,65 @@ class Metric:
         overall_recall = overall_tp / (overall_tp + overall_fn) * 100 if (overall_tp + overall_fn) > 0 else 0
 
         return precision, recall, overall_precision, overall_recall
-        
-    def midpoint_hit_criteria(self):
-        """For each ground truth activity window, if the predicted activity for the midpoint frame
-           matches the ground truth activity, we count it as a "correct hit."
 
-        Returns:
-            float: correct_hits / total_instances
-        """
-        correct_hits = 0
-        total_windows = 0
-
-        for _, row in self.ground_truth.iterrows():
-            # Get the frame range for the activity
-            start_frame = row['frame_start']
-            end_frame = row['frame_end']
-            activity = row['activity']
-            file_id = row['file_id']
-
-            # Calculate midpoint frame
-            midpoint_frame = (start_frame + end_frame) // 2
-            
-            # Check prediction for the midpoint frame
-            if self.file_id == file_id:
-                if midpoint_frame in self.predictions:
-                    predicted_activity, _ = self.predictions[midpoint_frame]
-                    if predicted_activity == activity:
-                        correct_hits += 1
-
-                total_windows += 1
-
-        return correct_hits / total_windows if total_windows > 0 else 0.0
-    
     def iou(self):
         """
-        Calculate the Intersection over Union (IoU) metric. Here, 
-        the overlapping part between the ground truth window and the predicted window is intersection and
-        the total area covered by both the ground truth and predicted windows is union.
-
-        Returns:
-            float: The average IoU score for each ground truth.
+        Compute mean IoU between ground truth and predicted activity segments.
         """
         iou_scores = []
+        for _, gt in self.filtered_ground_truth.iterrows():
+            gt_start = gt['frame_start']
+            gt_end = gt['frame_end']
+            activity = gt['activity']
 
-        for _, row in self.filtered_ground_truth.iterrows():
-            # Get the frame range for the activity
-            gt_start = row['frame_start']
-            gt_end = row['frame_end']
-            activity = row['activity']
-            
             # Find all predicted frames that match the activity
-            predicted_frames = self.predictions[
-                                    (self.predictions["activity"] == activity) & 
-                                    (self.predictions["frame"] >= gt_start) & 
-                                    (self.predictions["frame"] <= gt_end)
-                                ]["frame"].tolist()
-
-
-            if not predicted_frames:
+            pred_segments = self.segmented_predictions[
+                (self.segmented_predictions['activity'] == activity)
+            ]
+            if pred_segments.empty:
                 iou_scores.append(0)
                 continue
 
-            # Calculate intersection and union
-            pred_start = min(predicted_frames)
-            pred_end = max(predicted_frames)
-
-            intersection_start = max(gt_start, pred_start)
-            intersection_end = min(gt_end, pred_end)
-            intersection = max(0, intersection_end - intersection_start + 1)
-
-            union_start = min(gt_start, pred_start)
-            union_end = max(gt_end, pred_end)
-            union = max(0, union_end - union_start + 1)
-
-            iou = intersection / union if union > 0 else 0
-            iou_scores.append(iou)
-
+            # Compute IoU for each overlap, take max
+            best_iou = 0
+            for _, pred in pred_segments.iterrows():
+                pred_start = pred['frame_start']
+                pred_end = pred['frame_end']
+                intersection_start = max(gt_start, pred_start)
+                intersection_end = min(gt_end, pred_end)
+                intersection = max(0, intersection_end - intersection_start + 1)
+                union_start = min(gt_start, pred_start)
+                union_end = max(gt_end, pred_end)
+                union = max(0, union_end - union_start + 1)
+                iou = intersection / union if union > 0 else 0
+                best_iou = max(best_iou, iou)
+            iou_scores.append(best_iou)
         return sum(iou_scores) / len(iou_scores) if iou_scores else 0.0
-    
+
     def evaluate(self):
         mean_iou = self.iou()
         precision, recall, overall_precision, overall_recall = self.evaluate_multiclass()
-
         print("Precision per class (%):", {cls: f"{precision[cls]:.2f}%" for cls in precision})
         print("Recall per class (%):", {cls: f"{recall[cls]:.2f}%" for cls in recall})
         print(f"Overall Precision: {overall_precision:.2f}%")
         print(f"Overall Recall: {overall_recall:.2f}%")
         print(f"Mean IoU: {mean_iou*100:.2f}%")
-
-    #  Return results as a dictionary
         return {
-        "Precision per class (%)": {cls: f"{precision[cls]:.2f}%" for cls in precision},
-        "Recall per class (%)": {cls: f"{recall[cls]:.2f}%" for cls in recall},
-        "Overall Precision": f"{overall_precision:.2f}%",
-        "Overall Recall": f"{overall_recall:.2f}%",
-        "Mean IoU": f"{mean_iou*100:.2f}%"
-    }
-
+            "Precision per class (%)": {cls: f"{precision[cls]:.2f}%" for cls in precision},
+            "Recall per class (%)": {cls: f"{recall[cls]:.2f}%" for cls in recall},
+            "Overall Precision": f"{overall_precision:.2f}%",
+            "Overall Recall": f"{overall_recall:.2f}%",
+            "Mean IoU": f"{mean_iou*100:.2f}%"
+        }
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ground_truth", required=True, help="Path to the ground truth CSV file")
-    parser.add_argument("--prediction_log", required=True, help="Path to the prediction log file")
-    parser.add_argument("--file_id", required=True, help="File ID to process")
-    parser.add_argument("--output_file", required=True, help="Path to save the evaluation results")
+    parser.add_argument("--ground_truth", default="./dataset/dmd/gA", help="Path to the ground truth CSV file")
+    parser.add_argument("--prediction_log", default="./inference_logs", help="Path to the prediction log folder")
+    parser.add_argument("--output_file", default="./metrics", help="Path to save the evaluation results")
     args = parser.parse_args()
 
-    metrics = Metric(args.ground_truth, args.prediction_log, args.file_id)
+    metrics = Metric(args.ground_truth, args.prediction_log)
     results = metrics.evaluate()
     
     with open(args.output_file, 'w') as f:

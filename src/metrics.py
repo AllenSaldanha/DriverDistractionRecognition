@@ -2,20 +2,24 @@ import os
 import argparse
 import pandas as pd
 
+from pathlib import Path
+from dataset import load_trained_classes
+from utils.video_annotation_pairs import collect_video_annotation_pairs
+
 class Metric:
     """Metrics for multi-label activity detection in video clips."""
 
-    def __init__(self, ground_truth_csv, prediction_folder):
+    def __init__(self, prediction_folder, pairs):
         self.ground_truth = None
-        # self.filtered_ground_truth = self.ground_truth[self.ground_truth['file_id'] == file_id]
         self.predictions = self.parse_predictions(prediction_folder)
-        self.segmented_predictions = self.convert_predictions_to_segments(self.predictions)
+        self.pairs = pairs
+        self.filtered_ground_truth = self.load_ground_truth(pairs, self.predictions)
 
     @staticmethod
     def parse_predictions(prediction_folder):
         """
-        Parse all prediction CSVs in the folder for the given file_id (video stem).
-        Returns a DataFrame with columns: frame, activity, file_id.
+        Parse all prediction CSVs in the folder for the given pred_file (video stem).
+        Returns a DataFrame with columns: frame, activity, pred_file.
         """
         records = []
         for pred_file in os.listdir(prediction_folder):
@@ -31,54 +35,24 @@ class Metric:
                     for label in labels:
                         records.append({'frame': start_frame, 'activity': label, 'pred_file': pred_file})
         return pd.DataFrame(records)
-
-    @staticmethod
-    def convert_predictions_to_segments(predictions):
-        """
-        Converts frame-level predictions to activity segments.
-        """
-        if predictions.empty:
-            return pd.DataFrame(columns=['frame_start', 'frame_end', 'activity'])
-        # Sort by frame
-        predictions = predictions.sort_values(by='frame')
-        segments = []
-        current_activity = None
-        current_start = None
-
-        for _, row in predictions.iterrows():
-            frame = row['frame']
-            activity = row['activity']
-
-            # Start a new segment if the activity changes
-            if activity != current_activity:
-                if current_activity is not None:
-                    # Save the previous segment
-                    segments.append({
-                        'frame_start': current_start,
-                        'frame_end': frame - 1,
-                        'activity': current_activity
-                    })
-                # Start a new segment
-                current_activity = activity
-                current_start = frame
-
-        # Save the last segment
-        if current_activity is not None:
-            segments.append({
-                'frame_start': current_start,
-                'frame_end': predictions.iloc[-1]['frame'],
-                'activity': current_activity
-            })
-
-        return pd.DataFrame(segments)
     
+    @staticmethod
+    def load_ground_truth(pairs, predictions: pd.DataFrame):
+        ground_truth_to_predictions = {}
+        for _, prediction in predictions.iterrows():
+            pred_file = Path(prediction['pred_file']).stem
+            ground_truth_file = [x[1] for x in pairs if pred_file in Path(x[0]).stem]
+            if ground_truth_file and pred_file not in ground_truth_to_predictions.keys():
+                ground_truth_to_predictions[pred_file] = ground_truth_file
+        return ground_truth_to_predictions
     
     def evaluate_multiclass(self):
-        all_activities = set(self.filtered_ground_truth['activity']).union(set(self.segmented_predictions['activity']))
+        all_activities = load_trained_classes("./src/trained_classes.txt")
 
         # Initialize metrics for all known activities
-        metrics = {cls: {'tp': 0, 'fp': 0, 'fn': 0} for cls in all_activities}
-        matched_chunks = set()  
+        metrics = {cls: {'tp': 0, 'fp': 0, 'fn': 0} for cls in all_activities} 
+        
+        #Extract ground truth
         
         for _, gt in self.filtered_ground_truth.iterrows():
             gt_start = gt['frame_start']
@@ -177,15 +151,16 @@ class Metric:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ground_truth", default="./dataset/dmd/gA", help="Path to the ground truth CSV file")
     parser.add_argument("--prediction_log", default="./inference_logs", help="Path to the prediction log folder")
     parser.add_argument("--output_file", default="./metrics", help="Path to save the evaluation results")
+    parser.add_argument("--root_dir", default="./dataset/dmd/gA/", type=str, help="Path to dataset root")
     args = parser.parse_args()
 
-    metrics = Metric(args.ground_truth, args.prediction_log)
-    results = metrics.evaluate()
+    pairs = collect_video_annotation_pairs(args.root_dir)
+    metrics = Metric(args.prediction_log, pairs)
+    # results = metrics.evaluate()
     
-    with open(args.output_file, 'w') as f:
-        for key, value in results.items():
-            f.write(f"{key}: {value}\n")
+    # with open(args.output_file, 'w') as f:
+    #     for key, value in results.items():
+    #         f.write(f"{key}: {value}\n")
     print(f"Metrics evaluation saved to {args.output_file}")

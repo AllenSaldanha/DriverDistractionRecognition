@@ -1,5 +1,6 @@
 import os
 import argparse
+import json
 import pandas as pd
 
 from pathlib import Path
@@ -38,14 +39,41 @@ class Metric:
     
     @staticmethod
     def load_ground_truth(pairs, predictions: pd.DataFrame):
-        ground_truth_to_predictions = {}
-        for _, prediction in predictions.iterrows():
-            pred_file = Path(prediction['pred_file']).stem
-            ground_truth_file = [x[1] for x in pairs if pred_file in Path(x[0]).stem]
-            if ground_truth_file and pred_file not in ground_truth_to_predictions.keys():
-                ground_truth_to_predictions[pred_file] = ground_truth_file
-        return ground_truth_to_predictions
-    
+        """
+        For each prediction file, find its matching annotation file and load ground truth action intervals.
+        Returns a single DataFrame: [frame_start, frame_end, activity, pred_file]
+        """
+        gt_records = []
+        pred_files = predictions['pred_file'].unique()
+
+        for pred_file in pred_files:
+            pred_stem = Path(pred_file).stem
+
+            # Find matching annotation file based on video name match
+            match = next(((video_path, ann_path) for video_path, ann_path in pairs if pred_stem in Path(video_path).stem), None)
+            if not match:
+                print(f"No matching ground truth for {pred_file}")
+                continue
+
+            _, ann_path = match
+            with open(ann_path, 'r') as f:
+                try:
+                    actions = json.load(f)["openlabel"].get("actions", {})
+                except Exception as e:
+                    print(f"Failed to load {ann_path}: {e}")
+                    continue
+
+            for action_id, info in actions.items():
+                activity = info.get("type")
+                for interval in info.get("frame_intervals", []):
+                    gt_records.append({
+                        "frame_start": interval["frame_start"],
+                        "frame_end": interval["frame_end"],
+                        "activity": activity,
+                        "pred_file": pred_file  # key to match predictions
+                    })
+        return pd.DataFrame(gt_records)
+
     def evaluate_multiclass(self):
         all_activities = load_trained_classes("./src/trained_classes.txt")
 

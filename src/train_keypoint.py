@@ -51,25 +51,57 @@ def validate_epoch(model, val_loader, criterion, device):
     
     return val_loss / len(val_loader)
 
-def main(pairs, keypoints_folder):
-    EPOCHS = 6
+def main(args):
+    # Set random seeds for reproducibility
+    torch.manual_seed(42)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(42)
+    
+    # Device setup
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    logging.info(f"Using device: {device}")
+    
+    # Collect video-annotation pairs
+    pairs = collect_video_annotation_pairs(args.root_dir)
+    logging.info(f"Found {len(pairs)} valid video-annotation pairs.")
+    
+    if len(pairs) == 0:
+        logging.error("No valid video-annotation pairs found!")
+        return
     
     dataset = DriverActivityKeypointDataset(
         keypoints_folder= keypoints_folder,
         video_annotation_pairs=pairs,
         num_frames=16  # Number of frames in each sequence (Like I3D)
     )
-
-     # Split dataset into training and validation sets (80%-20%)
-    val_size = int(0.2 * len(dataset))
+    
+    logging.info(f"Dataset created with {len(dataset)} samples")
+    logging.info(f"Number of classes: {dataset.num_classes}")
+    logging.info(f"Action classes: {dataset.action_classes}")
+    
+    # Split dataset into training and validation sets (80%-20% by default)
+    val_size = int(args.val_split * len(dataset))
     train_size = len(dataset) - val_size
     train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
-
-    train_loader = DataLoader(train_dataset, batch_size=12, shuffle=True, num_workers=30, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=12, shuffle=False, num_workers=30, pin_memory=True)
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+    
+    logging.info(f"Train samples: {len(train_dataset)}, Val samples: {len(val_dataset)}")
+    
+    # Create data loaders
+    train_loader = DataLoader(
+        train_dataset, 
+        batch_size=args.batch_size, 
+        shuffle=True, 
+        num_workers=args.num_workers, 
+        pin_memory=True
+    )
+    val_loader = DataLoader(
+        val_dataset, 
+        batch_size=args.batch_size, 
+        shuffle=False, 
+        num_workers=args.num_workers, 
+        pin_memory=True
+    )
+    
     # Model selection
     model_dict = {
         'lstm': KeypointLSTM,
@@ -108,7 +140,6 @@ def main(pairs, keypoints_folder):
     logging.info(f"Number of parameters: {num_params:,}")
     logging.info(f"Model device: {next(model.parameters()).device}")
     
-    
      # Loss function and optimizer
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
@@ -118,9 +149,11 @@ def main(pairs, keypoints_folder):
     log_dir = f'runs/keypoint_{args.model_type}_experiment'
     writer = SummaryWriter(log_dir=log_dir)
     best_val_loss = float('inf')
+    best_model_path = None
+    val_loss = None
     
     # Training loop
-    for epoch in range(EPOCHS):
+    for epoch in range(args.epochs):
         logging.info(f"Epoch {epoch+1}/{args.epochs}")
         logging.info("-" * 50)
         
@@ -156,6 +189,20 @@ def main(pairs, keypoints_folder):
             }, best_model_path)
             logging.info(f"Saved best model at epoch {epoch+1} with val loss {val_loss:.4f}")
         
+        # Save checkpoint every few epochs
+        if (epoch + 1) % 5 == 0:
+            checkpoint_path = f'checkpoint_keypoint_{args.model_type}_epoch_{epoch+1}.pth'
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'val_loss': val_loss,
+                'model_type': args.model_type,
+                'num_classes': dataset.num_classes,
+                'action_classes': dataset.action_classes,
+                'args': args
+            }, checkpoint_path)
+            logging.info(f"Saved checkpoint at epoch {epoch+1}")
         
         writer.flush()
         logging.info("")
@@ -166,6 +213,7 @@ def main(pairs, keypoints_folder):
         'epoch': args.epochs - 1,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
+        'val_loss': val_loss,
         'model_type': args.model_type,
         'num_classes': dataset.num_classes,
         'action_classes': dataset.action_classes,
@@ -175,6 +223,7 @@ def main(pairs, keypoints_folder):
     logging.info(f"Training completed!")
     logging.info(f"Best validation loss: {best_val_loss:.4f}")
     logging.info(f"Final model saved to: {final_model_path}")
+    logging.info(f"Best model saved to: {best_model_path}")
     
     writer.close()
         
@@ -195,11 +244,32 @@ if __name__ == '__main__':
     parser.add_argument("--dropout", type=float, default=0.3,
                        help="Dropout rate")
     
+    # Training arguments
+    parser.add_argument("--epochs", type=int, default=20,
+                       help="Number of training epochs")
+    parser.add_argument("--batch_size", type=int, default=8,
+                       help="Batch size")
+    parser.add_argument("--learning_rate", type=float, default=1e-4,
+                       help="Learning rate")
+    parser.add_argument("--weight_decay", type=float, default=1e-5,
+                       help="Weight decay")
+    parser.add_argument("--val_split", type=float, default=0.2,
+                       help="Validation split ratio")
+    parser.add_argument("--num_workers", type=int, default=4,
+                       help="Number of data loader workers")
+    
+    # Scheduler arguments
+    parser.add_argument("--scheduler_step", type=int, default=7,
+                       help="Scheduler step size")
+    parser.add_argument("--scheduler_gamma", type=float, default=0.1,
+                       help="Scheduler gamma")
+    
+       
     args = parser.parse_args()
 
     pairs = collect_video_annotation_pairs(args.root_dir)
     keypoints_folder = args.keypoints_folder
     print(f"Found {len(pairs)} valid video-annotation pairs.")
     
-    main(pairs, keypoints_folder)
+    main(args)
     

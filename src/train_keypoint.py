@@ -12,7 +12,14 @@ from models.LSTM import (KeypointLSTM, KeypointGRU, KeypointTransformer,
                            KeypointCNN1D, KeypointAttentionLSTM)
 from utils.video_annotation_pairs import collect_video_annotation_pairs
 
-logging.basicConfig(filename='training.log', level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('keypoint_training.log'),
+        logging.StreamHandler()
+    ]
+)
 
 def train_epoch(model, train_loader, criterion, optimizer, device, epoch):
     """Train for one epoch"""

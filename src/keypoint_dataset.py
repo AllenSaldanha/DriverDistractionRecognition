@@ -87,6 +87,12 @@ class DriverActivityKeypointDataset(Dataset):
                 print(f"Warning: Keypoint file {keypoint_file} not found, using zeros")
                 keypoints_np = np.empty((0, 17, 2), dtype=np.float32)
             
+            if keypoints_np.shape[0] == 0:
+                # No person detected, use zeros
+                keypoints_np = np.zeros((1, 17, 2), dtype=np.float32)
+            elif keypoints_np.shape[0] > 1:
+                # More than one person detected, use only the first
+                keypoints_np = keypoints_np[:1]
             
             # Extract labels for this frame
             frame_labels = self._extract_labels_for_frame(frame_idx, actions_data)

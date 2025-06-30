@@ -1,5 +1,8 @@
 import torch
 import cv2
+import sys
+sys.path.insert(0, "/scratch/saldanha/ultralytics")
+
 from ultralytics import YOLO
 
 class YOLOv8Detector:

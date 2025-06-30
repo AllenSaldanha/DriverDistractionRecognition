@@ -1,0 +1,87 @@
+Found 8 video-annotation pairs
+Loading model from ./best_keypoint_lstm_model.pth...
+Loaded lstm model with 21 classes
+Model parameters: 719,125
+Generating predictions...
+Generated 4923 predictions
+Evaluating keypoint model performance...
+
+==================================================
+KEYPOINT MODEL EVALUATION RESULTS
+==================================================
+
+Overall Metrics:
+  Precision: 71.39%
+  Recall: 43.96%
+  F1-Score: 54.41%
+  Mean IoU: 40.47%
+
+Per-Class Metrics:
+Class                Precision    Recall       F1-Score    
+------------------------------------------------------------
+driver_actions/change_gear 0.00         0.00         0.00        
+driver_actions/drinking 0.00         0.00         0.00        
+driver_actions/hair_and_makeup 0.00         0.00         0.00        
+driver_actions/phonecall_left 0.00         0.00         0.00        
+driver_actions/phonecall_right 0.00         0.00         0.00        
+driver_actions/radio 0.00         0.00         0.00        
+driver_actions/reach_backseat 0.00         0.00         0.00        
+driver_actions/reach_side 0.00         0.00         0.00        
+driver_actions/safe_drive 0.00         0.00         0.00        
+driver_actions/talking_to_passenger 0.00         0.00         0.00        
+driver_actions/texting_left 0.00         0.00         0.00        
+driver_actions/texting_right 0.00         0.00         0.00        
+driver_actions/unclassified 0.00         0.00         0.00        
+gaze_on_road/looking_road 86.81        99.91        92.90       
+gaze_on_road/not_looking_road 0.00         0.00         0.00        
+hand_on_gear/hand_on_gear 0.00         0.00         0.00        
+hands_using_wheel/both 0.00         0.00         0.00        
+hands_using_wheel/none 0.00         0.00         0.00        
+hands_using_wheel/only_left 55.97        99.95        71.76       
+hands_using_wheel/only_right 0.00         0.00         0.00        
+talking/talking      0.00         0.00         0.00        
+
+==================================================
+DIAGNOSTIC INFORMATION
+==================================================
+Total predictions generated: 4923
+Total ground truth intervals: 1678
+Videos processed: 8
+Frame coverage: 99.92% (78768/78830)
+
+Class Distribution:
+Class                GT Count     Pred Count   Ratio       
+------------------------------------------------------------
+driver_actions/change_gear 785          0            0.00        
+driver_actions/drinking 3385         0            0.00        
+driver_actions/hair_and_makeup 3977         0            0.00        
+driver_actions/phonecall_left 9956         0            0.00        
+driver_actions/phonecall_right 11299        0            0.00        
+driver_actions/radio 1905         0            0.00        
+driver_actions/reach_backseat 808          0            0.00        
+driver_actions/reach_side 10142        0            0.00        
+driver_actions/safe_drive 25257        0            0.00        
+driver_actions/talking_to_passenger 836          0            0.00        
+driver_actions/texting_left 4344         0            0.00        
+driver_actions/texting_right 4327         0            0.00        
+driver_actions/unclassified 1674         0            0.00        
+gaze_on_road/looking_road 68440        78768        1.15        
+gaze_on_road/not_looking_road 10388        0            0.00        
+hand_on_gear/hand_on_gear 4807         0            0.00        
+hands_using_wheel/both 19537        0            0.00        
+hands_using_wheel/none 715          0            0.00        
+hands_using_wheel/only_left 44106        78768        1.79        
+hands_using_wheel/only_right 14290        0            0.00        
+talking/talking      14888        0            0.00        
+
+Video-wise Coverage:
+Video                          GT Frames    Coverage    
+------------------------------------------------------------
+gA_1_s2_2019-03-08T09;21;03+   13641        99.93%      
+gA_1_s1_2019-03-08T09;31;15+   6777         99.87%      
+gA_1_s3_2019-03-14T14;31;08+   1845         99.73%      
+gA_1_s4_2019-03-22T11;49;58+   16313        99.94%      
+gA_2_s3_2019-03-13T09;23;42+   1863         99.62%      
+gA_2_s4_2019-03-22T09;15;55+   16220        99.93%      
+gA_2_s1_2019-03-08T10;01;44+   7481         99.88%      
+gA_2_s2_2019-03-08T09;50;49+   14690        99.99%   

@@ -2,29 +2,44 @@ import os
 import json
 import numpy as np
 import torch
+from pathlib import Path
+import glob
+
 from torch.utils.data import Dataset
 
+def load_trained_classes(path):
+    """Load action classes from respective files"""
+    with open(path, "r") as f:
+        return [line.strip() for line in f.readlines()]
+
 class DriverActivityKeypointDataset(Dataset):
-    def __init__(self, keypoints_folder, annotation_json_path):
-        self.keypoints_folder = keypoints_folder
-
-        with open(annotation_json_path, 'r') as f:
-            data = json.load(f)
-        self.openlabel_data = data["openlabel"]
-
-        self.actions_data = self.openlabel_data.get("actions", {})
-
-        # Define action classes
-        self.action_classes = sorted(list(set(
-            obj_info.get("type", "Unknown") for obj_id, obj_info in self.actions_data.items()
-        )))
+    def __init__(self, keypoints_folder, video_annotation_pairs):
+        self.keypoints_folder = Path(keypoints_folder)
+        self.action_classes = load_trained_classes("./src/trained_classes.txt")
         self.num_classes = len(self.action_classes)
-        self.action_to_idx = {action: idx for idx, action in enumerate(self.action_classes)}
+        self.action_to_idx = {name: i for i, name in enumerate(self.action_classes)}
+        
+        # Iterate through video_annotation_pairs to load annotations and their respective keypoints
+        for video_path, ann_path in video_annotation_pairs:
+            video_path_stem = Path(video_path).stem
+            keypoints_dir = self.keypoints_folder / video_path_stem
 
-        # List .npy keypoint files sorted by frame index
-        self.keypoint_files = sorted([
-            f for f in os.listdir(keypoints_folder) if f.endswith('.npy')
-        ])
+            if not keypoints_dir.exists():
+                print(f"Warning: Keypoints directory {keypoints_dir} not found, skipping...")
+                continue
+
+            with open(ann_path, 'r') as f:
+                data = json.load(f)["openlabel"]
+
+            self.actions_data = data.get("actions", {})
+            print(self.actions_data)
+
+            # List .npy keypoint files sorted by frame index
+            self.keypoint_files = sorted([
+                f for f in os.listdir(keypoints_dir) if f.endswith('.npy')
+            ])
+            print(self.keypoint_files)
+            break
     
     def __len__(self):
         return len(self.keypoint_files)

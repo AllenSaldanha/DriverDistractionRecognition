@@ -1,9 +1,12 @@
 from keypoint_dataset import DriverActivityKeypointDataset
 from torch.utils.data import DataLoader
+from utils.video_annotation_pairs import collect_video_annotation_pairs
 
+
+pairs = collect_video_annotation_pairs('./dataset/dmd')
 dataset = DriverActivityKeypointDataset(
-    keypoints_folder='./keypoints/gA_1_s1',
-    annotation_json_path='./dataset/dmd/gA/1/s1/gA_1_s1_2019-03-08T09;31;15+01;00_rgb_ann_distraction.json'
+    keypoints_folder='./keypoints/gA',
+    video_annotation_pairs=pairs
 )
 
 # Wrap in DataLoader

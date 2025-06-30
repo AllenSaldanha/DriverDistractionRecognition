@@ -14,6 +14,43 @@ from utils.video_annotation_pairs import collect_video_annotation_pairs
 
 logging.basicConfig(filename='training.log', level=logging.INFO)
 
+def train_epoch(model, train_loader, criterion, optimizer, device, epoch):
+    """Train for one epoch"""
+    model.train()
+    running_loss = 0.0
+    
+    for i, (keypoints, labels) in enumerate(train_loader):
+        keypoints = keypoints.to(device, non_blocking=True)
+        labels = labels.to(device, non_blocking=True)
+        
+        optimizer.zero_grad()
+        outputs = model(keypoints)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        
+        running_loss += loss.item()
+        
+        if (i + 1) % 10 == 0 or (i + 1) == len(train_loader):
+            logging.info(f"Epoch [{epoch+1}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}")
+    
+    return running_loss / len(train_loader)
+
+def validate_epoch(model, val_loader, criterion, device):
+    """Validate for one epoch"""
+    model.eval()
+    val_loss = 0.0
+    
+    with torch.no_grad():
+        for keypoints, labels in val_loader:
+            keypoints = keypoints.to(device, non_blocking=True)
+            labels = labels.to(device, non_blocking=True)
+            outputs = model(keypoints)
+            loss = criterion(outputs, labels)
+            val_loss += loss.item()
+    
+    return val_loss / len(val_loader)
+
 def main(pairs, keypoints_folder):
     EPOCHS = 6
     
@@ -87,54 +124,59 @@ def main(pairs, keypoints_folder):
         logging.info(f"Epoch {epoch+1}/{args.epochs}")
         logging.info("-" * 50)
         
-        model.train()
-        running_loss = 0.0
+        # Training
+        train_loss = train_epoch(model, train_loader, criterion, optimizer, device, epoch)
+        logging.info(f"Training Loss: {train_loss:.4f}")
+        writer.add_scalar('Loss/Train', train_loss, epoch)
         
-        for i, (keypoints, labels) in enumerate(train_loader):
-            # keypoints.shape -> [B, num_of_frames, N, 17, 2] where N is person count 17 is COCO points
-            # labels.shape -> [B, num_classes]
-            keypoints = keypoints.to(device, non_blocking=True)
-            labels = labels.to(device, non_blocking=True)
-            
-            optimizer.zero_grad()
-            outputs = model(keypoints)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            
-            running_loss += loss.item()
-            
-            if (i + 1) % 10 == 0 or (i + 1) == len(train_loader):
-                logging.info(f"Epoch [{epoch+1}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}")
-       
-        epoch_loss = running_loss / len(train_loader)
-        logging.info(f"Training Loss: {epoch_loss:.4f}")
-        writer.add_scalar('Loss/Train', epoch_loss, epoch)
+        # Validation
+        val_loss = validate_epoch(model, val_loader, criterion, device)
+        logging.info(f"Validation Loss: {val_loss:.4f}")
+        writer.add_scalar('Loss/Validation', val_loss, epoch)
         
-        # Validation phase
-        model.eval()
-        val_loss = 0.0
-        with torch.no_grad():
-            for frame, labels in val_loader:
-                frame = frame.to(device, non_blocking=True)
-                labels = labels.to(device, non_blocking=True)
-                outputs = model(frame)
-                loss = criterion(outputs, labels)
-                val_loss += loss.item()
-
-        val_loss /= len(val_loader)
-        logging.info(f"Epoch [{epoch+1}] Validation Loss: {val_loss:.4f}")
-        writer.add_scalar('Loss/val', val_loss, epoch)
-
-        # Save best model checkpoint
+        # Learning rate scheduling
+        scheduler.step()
+        current_lr = optimizer.param_groups[0]['lr']
+        logging.info(f"Learning Rate: {current_lr:.6f}")
+        writer.add_scalar('Learning_Rate', current_lr, epoch)
+        
+        # Save best model
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), 'best_model.pth')
+            best_model_path = f'best_keypoint_{args.model_type}_model.pth'
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'val_loss': val_loss,
+                'model_type': args.model_type,
+                'num_classes': dataset.num_classes,
+                'action_classes': dataset.action_classes,
+                'args': args
+            }, best_model_path)
             logging.info(f"Saved best model at epoch {epoch+1} with val loss {val_loss:.4f}")
-
-        scheduler.step()
-        writer.add_scalar('LearningRate', scheduler.get_last_lr()[0], epoch)
+        
+        
         writer.flush()
+        logging.info("")
+    
+    # Save final model
+    final_model_path = f'final_keypoint_{args.model_type}_model.pth'
+    torch.save({
+        'epoch': args.epochs - 1,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'model_type': args.model_type,
+        'num_classes': dataset.num_classes,
+        'action_classes': dataset.action_classes,
+        'args': args
+    }, final_model_path)
+    
+    logging.info(f"Training completed!")
+    logging.info(f"Best validation loss: {best_val_loss:.4f}")
+    logging.info(f"Final model saved to: {final_model_path}")
+    
+    writer.close()
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Driver Activity Keypoint Training")

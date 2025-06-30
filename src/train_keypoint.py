@@ -1,7 +1,11 @@
 import torch
 import argparse
 import logging
+import torch.nn as nn
+import torch.optim as optim
 
+from torch.optim.lr_scheduler import StepLR
+from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, random_split
 from keypoint_dataset import DriverActivityKeypointDataset
 from models.LSTM import (KeypointLSTM, KeypointGRU, KeypointTransformer, 
@@ -61,13 +65,77 @@ def main(pairs, keypoints_folder):
     
     model = model.to(device)
     
-    # Test loop
-    for keypoints, labels in train_loader:
-        # keypoints.shape -> [B, num_of_frames, N, 17, 2] where N is person count 17 is COCO points
-        # labels.shape -> [B, num_classes]
-        print(keypoints.shape, labels.shape)
-        break
+    # Log model info
+    num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    logging.info(f"Model: {args.model_type}")
+    logging.info(f"Number of parameters: {num_params:,}")
+    logging.info(f"Model device: {next(model.parameters()).device}")
+    
+    
+     # Loss function and optimizer
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+    scheduler = StepLR(optimizer, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
+    
+    # TensorBoard logging
+    log_dir = f'runs/keypoint_{args.model_type}_experiment'
+    writer = SummaryWriter(log_dir=log_dir)
+    best_val_loss = float('inf')
+    
+    # Training loop
+    for epoch in range(EPOCHS):
+        logging.info(f"Epoch {epoch+1}/{args.epochs}")
+        logging.info("-" * 50)
+        
+        model.train()
+        running_loss = 0.0
+        
+        for i, (keypoints, labels) in enumerate(train_loader):
+            # keypoints.shape -> [B, num_of_frames, N, 17, 2] where N is person count 17 is COCO points
+            # labels.shape -> [B, num_classes]
+            keypoints = keypoints.to(device, non_blocking=True)
+            labels = labels.to(device, non_blocking=True)
+            
+            optimizer.zero_grad()
+            outputs = model(keypoints)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            
+            running_loss += loss.item()
+            
+            if (i + 1) % 10 == 0 or (i + 1) == len(train_loader):
+                logging.info(f"Epoch [{epoch+1}], Step [{i+1}/{len(train_loader)}], Loss: {loss.item():.4f}")
+       
+        epoch_loss = running_loss / len(train_loader)
+        logging.info(f"Training Loss: {epoch_loss:.4f}")
+        writer.add_scalar('Loss/Train', epoch_loss, epoch)
+        
+        # Validation phase
+        model.eval()
+        val_loss = 0.0
+        with torch.no_grad():
+            for frame, labels in val_loader:
+                frame = frame.to(device, non_blocking=True)
+                labels = labels.to(device, non_blocking=True)
+                outputs = model(frame)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
 
+        val_loss /= len(val_loader)
+        logging.info(f"Epoch [{epoch+1}] Validation Loss: {val_loss:.4f}")
+        writer.add_scalar('Loss/val', val_loss, epoch)
+
+        # Save best model checkpoint
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            torch.save(model.state_dict(), 'best_model.pth')
+            logging.info(f"Saved best model at epoch {epoch+1} with val loss {val_loss:.4f}")
+
+        scheduler.step()
+        writer.add_scalar('LearningRate', scheduler.get_last_lr()[0], epoch)
+        writer.flush()
+        
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Driver Activity Keypoint Training")
     parser.add_argument("--root_dir", default = "./dataset/dmd", type=str, help="Path to dataset root")

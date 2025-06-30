@@ -19,6 +19,8 @@ class DriverActivityKeypointDataset(Dataset):
         self.num_classes = len(self.action_classes)
         self.action_to_idx = {name: i for i, name in enumerate(self.action_classes)}
         
+        self.video_meta = []
+        
         # Iterate through video_annotation_pairs to load annotations and their respective keypoints
         for video_path, ann_path in video_annotation_pairs:
             video_path_stem = Path(video_path).stem
@@ -31,16 +33,16 @@ class DriverActivityKeypointDataset(Dataset):
             with open(ann_path, 'r') as f:
                 data = json.load(f)["openlabel"]
 
-            self.actions_data = data.get("actions", {})
-            print(self.actions_data)
+            actions = data.get("actions", {})
 
             # List .npy keypoint files sorted by frame index
-            self.keypoint_files = sorted([
-                f for f in os.listdir(keypoints_dir) if f.endswith('.npy')
-            ])
-            print(self.keypoint_files)
+            keypoint_files = sorted(glob.glob(str(keypoints_dir / "frame_*.npy")))
+            total_frames = len(keypoint_files)
+            
+            self.video_meta.append((keypoints_dir, ann_path, total_frames, actions))
+            print(self.video_meta)
             break
-    
+               
     def __len__(self):
         return len(self.keypoint_files)
 

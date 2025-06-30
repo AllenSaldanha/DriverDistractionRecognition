@@ -13,13 +13,15 @@ def load_trained_classes(path):
         return [line.strip() for line in f.readlines()]
 
 class DriverActivityKeypointDataset(Dataset):
-    def __init__(self, keypoints_folder, video_annotation_pairs):
+    def __init__(self, keypoints_folder, video_annotation_pairs, sequence_length):
         self.keypoints_folder = Path(keypoints_folder)
         self.action_classes = load_trained_classes("./src/trained_classes.txt")
         self.num_classes = len(self.action_classes)
         self.action_to_idx = {name: i for i, name in enumerate(self.action_classes)}
+        self.sequence_length = sequence_length
         
         self.video_meta = []
+        self.samples = []
         
         # Iterate through video_annotation_pairs to load annotations and their respective keypoints
         for video_path, ann_path in video_annotation_pairs:
@@ -39,9 +41,16 @@ class DriverActivityKeypointDataset(Dataset):
             keypoint_files = sorted(glob.glob(str(keypoints_dir / "frame_*.npy")))
             total_frames = len(keypoint_files)
             
+            if total_frames < self.sequence_length:
+                print(f"Warning: Video {video_path_stem} has only {total_frames} frames, skipping...")
+                continue
+            
             self.video_meta.append((keypoints_dir, ann_path, total_frames, actions))
-            print(self.video_meta)
-            break
+            
+            # Just like in I3D, we will sample sequences of frames
+            for start_frame in range(0, total_frames - self.sequence_length + 1, self.sequence_length):
+                self.samples.append((keypoints_dir, ann_path, start_frame, actions))
+            
                
     def __len__(self):
         return len(self.keypoint_files)

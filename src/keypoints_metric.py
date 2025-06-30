@@ -374,10 +374,10 @@ class KeypointMetrics:
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate Keypoint Model Performance")
-    parser.add_argument("--model_path", default="./best_keypoint_lstm_model.pth", help="Path to trained model checkpoint")
-    parser.add_argument("--keypoints_folder", default="./keypoints/gA", help="Path to keypoints folder")
+    parser.add_argument("--model_path", default="./best_keypoint_body_lstm_model.pth", help="Path to trained model checkpoint")
+    parser.add_argument("--keypoints_folder", default="./keypoints/gA/body", help="Path to keypoints folder")
     parser.add_argument("--root_dir", default="./dataset/dmd/gA/", help="Path to dataset root")
-    parser.add_argument("--output_file", default="./keypoint_metrics_results.json", help="Output file for results")
+    parser.add_argument("--output_file", default="./keypoint_body_metrics_results.json", help="Output file for results")
     parser.add_argument("--device", default="cuda", choices=["cuda", "cpu"], help="Device to use for evaluation")
     
     args = parser.parse_args()

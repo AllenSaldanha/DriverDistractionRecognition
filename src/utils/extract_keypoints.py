@@ -48,5 +48,5 @@ def extract_and_save_keypoints(root_dir, output_folder, device=None):
 
 if __name__ == "__main__":
     root_dir = "./dataset/dmd/gA"
-    output_folder = "./keypoints/gA"
+    output_folder = "./keypoints/gA/body"
     extract_and_save_keypoints(root_dir, output_folder)

@@ -16,7 +16,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('keypoint_training.log'),
+        logging.FileHandler('keypoint_body_training.log'),
         logging.StreamHandler()
     ]
 )
@@ -153,7 +153,7 @@ def main(args):
     scheduler = StepLR(optimizer, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
     
     # TensorBoard logging
-    log_dir = f'runs/keypoint_{args.model_type}_experiment'
+    log_dir = f'runs/keypoint_body_{args.model_type}_experiment'
     writer = SummaryWriter(log_dir=log_dir)
     best_val_loss = float('inf')
     best_model_path = None
@@ -183,7 +183,7 @@ def main(args):
         # Save best model
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            best_model_path = f'best_keypoint_{args.model_type}_model.pth'
+            best_model_path = f'best_keypoint_body_{args.model_type}_model.pth'
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
@@ -198,7 +198,7 @@ def main(args):
         
         # Save checkpoint every few epochs
         if (epoch + 1) % 5 == 0:
-            checkpoint_path = f'checkpoint_keypoint_{args.model_type}_epoch_{epoch+1}.pth'
+            checkpoint_path = f'checkpoint_keypoint_body_{args.model_type}_epoch_{epoch+1}.pth'
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
@@ -215,7 +215,7 @@ def main(args):
         logging.info("")
     
     # Save final model
-    final_model_path = f'final_keypoint_{args.model_type}_model.pth'
+    final_model_path = f'final_keypoint_body_{args.model_type}_model.pth'
     torch.save({
         'epoch': args.epochs - 1,
         'model_state_dict': model.state_dict(),
@@ -237,7 +237,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Driver Activity Keypoint Training")
     parser.add_argument("--root_dir", default = "./dataset/dmd", type=str, help="Path to dataset root")
-    parser.add_argument("--keypoints_folder", default="./keypoints/gA", type=str, help="Path to keypoints folder")
+    parser.add_argument("--keypoints_folder", default="./keypoints/gA/body", type=str, help="Path to keypoints folder")
     
     
     # Model params

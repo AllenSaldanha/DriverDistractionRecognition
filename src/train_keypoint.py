@@ -4,6 +4,8 @@ import logging
 
 from torch.utils.data import DataLoader, random_split
 from keypoint_dataset import DriverActivityKeypointDataset
+from models.LSTM import (KeypointLSTM, KeypointGRU, KeypointTransformer, 
+                           KeypointCNN1D, KeypointAttentionLSTM)
 from utils.video_annotation_pairs import collect_video_annotation_pairs
 
 logging.basicConfig(filename='training.log', level=logging.INFO)
@@ -27,6 +29,38 @@ def main(pairs, keypoints_folder):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    # Model selection
+    model_dict = {
+        'lstm': KeypointLSTM,
+        'gru': KeypointGRU,
+        'transformer': KeypointTransformer,
+        'cnn1d': KeypointCNN1D,
+        'attention_lstm': KeypointAttentionLSTM
+    }
+    
+    # Initialize model
+    model_class = model_dict[args.model_type]
+    
+    if args.model_type == 'transformer':
+        model = model_class(
+            num_classes=dataset.num_classes,
+            max_persons=1,
+            d_model=args.hidden_size,
+            nhead=8,
+            num_layers=args.num_layers,
+            dropout=args.dropout
+        )
+    else:
+        model = model_class(
+            num_classes=dataset.num_classes,
+            max_persons=1,
+            hidden_size=args.hidden_size,
+            num_layers=args.num_layers,
+            dropout=args.dropout
+        )
+    
+    model = model.to(device)
+    
     # Test loop
     for keypoints, labels in train_loader:
         # keypoints.shape -> [B, num_of_frames, N, 17, 2] where N is person count 17 is COCO points
@@ -38,6 +72,19 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Driver Activity Keypoint Training")
     parser.add_argument("--root_dir", default = "./dataset/dmd", type=str, help="Path to dataset root")
     parser.add_argument("--keypoints_folder", default="./keypoints/gA", type=str, help="Path to keypoints folder")
+    
+    
+    # Model params
+    parser.add_argument("--model_type", type=str, default="lstm", 
+                       choices=['lstm', 'gru', 'transformer', 'cnn1d', 'attention_lstm'],
+                       help="Type of model to train")
+    parser.add_argument("--hidden_size", type=int, default=128,
+                       help="Hidden size for RNN/Transformer models")
+    parser.add_argument("--num_layers", type=int, default=2,
+                       help="Number of layers")
+    parser.add_argument("--dropout", type=float, default=0.3,
+                       help="Dropout rate")
+    
     args = parser.parse_args()
 
     pairs = collect_video_annotation_pairs(args.root_dir)

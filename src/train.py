@@ -102,7 +102,7 @@ def main(pairs):
     writer.close()
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Driver Activity Dataset Loader")
+    parser = argparse.ArgumentParser(description="Driver Activity I3D Training")
     parser.add_argument("--root_dir", default = "./dataset/dmd", type=str, help="Path to dataset root")
     args = parser.parse_args()
 

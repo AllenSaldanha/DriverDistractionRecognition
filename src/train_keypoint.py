@@ -70,7 +70,7 @@ def main(args):
         return
     
     dataset = DriverActivityKeypointDataset(
-        keypoints_folder= keypoints_folder,
+        keypoints_folder= args.keypoints_folder,
         video_annotation_pairs=pairs,
         num_frames=16  # Number of frames in each sequence (Like I3D)
     )
@@ -247,7 +247,7 @@ if __name__ == '__main__':
     # Training arguments
     parser.add_argument("--epochs", type=int, default=20,
                        help="Number of training epochs")
-    parser.add_argument("--batch_size", type=int, default=8,
+    parser.add_argument("--batch_size", type=int, default=12,
                        help="Batch size")
     parser.add_argument("--learning_rate", type=float, default=1e-4,
                        help="Learning rate")
@@ -255,7 +255,7 @@ if __name__ == '__main__':
                        help="Weight decay")
     parser.add_argument("--val_split", type=float, default=0.2,
                        help="Validation split ratio")
-    parser.add_argument("--num_workers", type=int, default=4,
+    parser.add_argument("--num_workers", type=int, default=30,
                        help="Number of data loader workers")
     
     # Scheduler arguments
@@ -266,10 +266,6 @@ if __name__ == '__main__':
     
        
     args = parser.parse_args()
-
-    pairs = collect_video_annotation_pairs(args.root_dir)
-    keypoints_folder = args.keypoints_folder
-    print(f"Found {len(pairs)} valid video-annotation pairs.")
     
     main(args)
     

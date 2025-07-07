@@ -1,0 +1,69 @@
+Precision per class (%): {'driver_actions/change_gear': '39.31%', 'driver_actions/drinking': '82.81%', 'driver_actions/hair_and_makeup': '93.37%', 'driver_actions/phonecall_left': '99.04%', 'driver_actions/phonecall_right': '99.35%', 'driver_actions/radio': '88.66%', 'driver_actions/reach_backseat': '94.89%', 'driver_actions/reach_side': '79.00%', 'driver_actions/safe_drive': '88.10%', 'driver_actions/talking_to_passenger': '27.68%', 'driver_actions/texting_left': '96.18%', 'driver_actions/texting_right': '85.77%', 'driver_actions/unclassified': '53.69%', 'gaze_on_road/looking_road': '88.94%', 'gaze_on_road/not_looking_road': '50.73%', 'hand_on_gear/hand_on_gear': '89.82%', 'hands_using_wheel/both': '88.52%', 'hands_using_wheel/none': '48.00%', 'hands_using_wheel/only_left': '96.59%', 'hands_using_wheel/only_right': '95.62%', 'talking/talking': '72.99%'}
+Recall per class (%): {'driver_actions/change_gear': '41.71%', 'driver_actions/drinking': '94.29%', 'driver_actions/hair_and_makeup': '95.25%', 'driver_actions/phonecall_left': '97.59%', 'driver_actions/phonecall_right': '98.69%', 'driver_actions/radio': '96.22%', 'driver_actions/reach_backseat': '99.70%', 'driver_actions/reach_side': '83.37%', 'driver_actions/safe_drive': '93.99%', 'driver_actions/talking_to_passenger': '69.40%', 'driver_actions/texting_left': '95.86%', 'driver_actions/texting_right': '87.06%', 'driver_actions/unclassified': '66.32%', 'gaze_on_road/looking_road': '97.75%', 'gaze_on_road/not_looking_road': '80.06%', 'hand_on_gear/hand_on_gear': '94.71%', 'hands_using_wheel/both': '93.01%', 'hands_using_wheel/none': '48.85%', 'hands_using_wheel/only_left': '97.61%', 'hands_using_wheel/only_right': '97.56%', 'talking/talking': '76.46%'}
+Overall Precision: 86.58%
+Overall Recall: 93.27%
+Mean IoU: 84.21%
+
+Debug Info:
+Total predictions: 2511
+Total ground truth intervals: 988
+Videos with predictions: 4
+Prediction file mappings: 4
+Activities in trained_classes: 21
+Activities in ground truth: 22
+Extra activities in GT (ignored): {'driver_actions/standstill_or_waiting'}
+
+=== DETAILED DIAGNOSTICS ===
+
+Video: gA_2_s3_2019-03-13T09;23;42+01;00_rgb_body.mp4
+  GT frames: 1863
+  Frames with predictions: 1833 (coverage: 98.39%)
+
+Video: gA_2_s2_2019-03-08T09;50;49+01;00_rgb_body.mp4
+  GT frames: 14690
+  Frames with predictions: 14665 (coverage: 99.83%)
+
+Video: gA_2_s4_2019-03-22T09;15;55+01;00_rgb_body.mp4
+  GT frames: 16220
+  Frames with predictions: 16201 (coverage: 99.88%)
+
+Video: gA_2_s1_2019-03-08T10;01;44+01;00_rgb_body.mp4
+  GT frames: 7481
+  Frames with predictions: 7449 (coverage: 99.57%)
+
+Overall frame coverage: 99.74%
+
+=== CLASS DISTRIBUTION (with interpolation) ===
+Class distribution (frame-level with interpolation):
+  driver_actions/change_gear: Pred=608, GT=573, Ratio=1.06
+  driver_actions/drinking: Pred=1856, GT=1630, Ratio=1.14
+  driver_actions/hair_and_makeup: Pred=1824, GT=1788, Ratio=1.02
+  driver_actions/phonecall_left: Pred=5232, GT=5310, Ratio=0.99
+  driver_actions/phonecall_right: Pred=6304, GT=6346, Ratio=0.99
+  driver_actions/radio: Pred=1120, GT=1032, Ratio=1.09
+  driver_actions/reach_backseat: Pred=352, GT=335, Ratio=1.05
+  driver_actions/reach_side: Pred=4976, GT=4715, Ratio=1.06
+  driver_actions/safe_drive: Pred=13515, GT=12669, Ratio=1.07
+  driver_actions/talking_to_passenger: Pred=1008, GT=402, Ratio=2.51
+  driver_actions/texting_left: Pred=2096, GT=2103, Ratio=1.00
+  driver_actions/texting_right: Pred=2432, GT=2396, Ratio=1.02
+  driver_actions/unclassified: Pred=1056, GT=855, Ratio=1.24
+  gaze_on_road/looking_road: Pred=38100, GT=34668, Ratio=1.10
+  gaze_on_road/not_looking_road: Pred=8816, GT=5586, Ratio=1.58
+  hand_on_gear/hand_on_gear: Pred=4864, GT=4613, Ratio=1.05
+  hands_using_wheel/both: Pred=8459, GT=8051, Ratio=1.05
+  hands_using_wheel/none: Pred=400, GT=393, Ratio=1.02
+  hands_using_wheel/only_left: Pred=24521, GT=24265, Ratio=1.01
+  hands_using_wheel/only_right: Pred=7600, GT=7449, Ratio=1.02
+  talking/talking: Pred=10256, GT=9791, Ratio=1.05
+
+=== PREDICTION FILE MAPPING ===
+  gA_2_s3_2019-03-13T09;23;42+01;00_rgb_body.csv -> gA_2_s3_2019-03-13T09;23;42+01;00_rgb_body.mp4
+    GT intervals: 32, Predictions: 115
+  gA_2_s2_2019-03-08T09;50;49+01;00_rgb_body.csv -> gA_2_s2_2019-03-08T09;50;49+01;00_rgb_body.mp4
+    GT intervals: 300, Predictions: 917
+  gA_2_s4_2019-03-22T09;15;55+01;00_rgb_body.csv -> gA_2_s4_2019-03-22T09;15;55+01;00_rgb_body.mp4
+    GT intervals: 384, Predictions: 1013
+  gA_2_s1_2019-03-08T10;01;44+01;00_rgb_body.csv -> gA_2_s1_2019-03-08T10;01;44+01;00_rgb_body.mp4
+    GT intervals: 272, Predictions: 466
+Metrics evaluation saved to ./metrics_body

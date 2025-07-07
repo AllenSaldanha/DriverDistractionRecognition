@@ -26,7 +26,8 @@ class DriverActivityKeypointDataset(Dataset):
         # Iterate through video_annotation_pairs to load annotations and their respective keypoints
         for video_path, ann_path in video_annotation_pairs:
             video_path_stem = Path(video_path).stem
-            keypoints_dir = self.keypoints_folder / video_path_stem
+            group = video_path_stem.split('_')[0]
+            keypoints_dir = self.keypoints_folder / group / 'body' / video_path_stem
 
             if not keypoints_dir.exists():
                 print(f"Warning: Keypoints directory {keypoints_dir} not found, skipping...")

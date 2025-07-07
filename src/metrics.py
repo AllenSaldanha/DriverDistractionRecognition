@@ -315,8 +315,8 @@ class Metric:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--prediction_log", default="./inference_logs", help="Path to the prediction log folder")
-    parser.add_argument("--output_file", default="./metrics", help="Path to save the evaluation results")
-    parser.add_argument("--root_dir", default="./dataset/dmd/gA/", type=str, help="Path to dataset root")
+    parser.add_argument("--output_file", default="./metrics_body", help="Path to save the evaluation results")
+    parser.add_argument("--root_dir", default="./dataset/dmd/gA/5", type=str, help="Path to dataset root")
     args = parser.parse_args()
 
     pairs = collect_video_annotation_pairs(args.root_dir)

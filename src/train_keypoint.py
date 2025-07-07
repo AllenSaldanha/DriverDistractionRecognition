@@ -197,7 +197,7 @@ def main(args):
             logging.info(f"Saved best model at epoch {epoch+1} with val loss {val_loss:.4f}")
         
         # Save checkpoint every few epochs
-        if (epoch + 1) % 5 == 0:
+        if (epoch + 1) % 100 == 0:
             checkpoint_path = f'checkpoint_keypoint_body_{args.model_type}_epoch_{epoch+1}.pth'
             torch.save({
                 'epoch': epoch,
@@ -237,7 +237,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Driver Activity Keypoint Training")
     parser.add_argument("--root_dir", default = "./dataset/dmd", type=str, help="Path to dataset root")
-    parser.add_argument("--keypoints_folder", default="./keypoints/gA/body", type=str, help="Path to keypoints folder")
+    parser.add_argument("--keypoints_folder", default="./keypoints/", type=str, help="Path to keypoints folder")
     
     
     # Model params
@@ -246,13 +246,13 @@ if __name__ == '__main__':
                        help="Type of model to train")
     parser.add_argument("--hidden_size", type=int, default=128,
                        help="Hidden size for RNN/Transformer models")
-    parser.add_argument("--num_layers", type=int, default=2,
+    parser.add_argument("--num_layers", type=int, default=6,
                        help="Number of layers")
     parser.add_argument("--dropout", type=float, default=0.3,
                        help="Dropout rate")
     
     # Training arguments
-    parser.add_argument("--epochs", type=int, default=20,
+    parser.add_argument("--epochs", type=int, default=40,
                        help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=12,
                        help="Batch size")

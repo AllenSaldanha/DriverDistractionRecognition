@@ -1,9 +1,9 @@
-Found 8 video-annotation pairs
+Found 4 video-annotation pairs
 Loading model from ./best_keypoint_body_lstm_model.pth...
 Loaded lstm model with 21 classes
-Model parameters: 719,125
+Model parameters: 2,300,181
 Generating predictions...
-Generated 4918 predictions
+Generated 2511 predictions
 Evaluating keypoint model performance...
 
 ==================================================
@@ -11,10 +11,10 @@ KEYPOINT MODEL EVALUATION RESULTS
 ==================================================
 
 Overall Metrics:
-  Precision: 85.44%
-  Recall: 41.41%
-  F1-Score: 55.78%
-  Mean IoU: 40.43%
+  Precision: 84.33%
+  Recall: 68.68%
+  F1-Score: 75.71%
+  Mean IoU: 65.25%
 
 Per-Class Metrics:
 Class                Precision    Recall       F1-Score    
@@ -22,66 +22,64 @@ Class                Precision    Recall       F1-Score
 driver_actions/change_gear 0.00         0.00         0.00        
 driver_actions/drinking 0.00         0.00         0.00        
 driver_actions/hair_and_makeup 0.00         0.00         0.00        
-driver_actions/phonecall_left 0.00         0.00         0.00        
-driver_actions/phonecall_right 0.00         0.00         0.00        
+driver_actions/phonecall_left 67.89        86.53        76.09       
+driver_actions/phonecall_right 86.57        98.66        92.22       
 driver_actions/radio 0.00         0.00         0.00        
 driver_actions/reach_backseat 0.00         0.00         0.00        
-driver_actions/reach_side 0.00         0.00         0.00        
-driver_actions/safe_drive 0.00         0.00         0.00        
+driver_actions/reach_side 61.91        79.83        69.74       
+driver_actions/safe_drive 80.00        59.51        68.25       
 driver_actions/talking_to_passenger 0.00         0.00         0.00        
 driver_actions/texting_left 0.00         0.00         0.00        
 driver_actions/texting_right 0.00         0.00         0.00        
 driver_actions/unclassified 0.00         0.00         0.00        
-gaze_on_road/looking_road 86.80        99.80        92.84       
+gaze_on_road/looking_road 86.10        99.78        92.43       
 gaze_on_road/not_looking_road 0.00         0.00         0.00        
 hand_on_gear/hand_on_gear 0.00         0.00         0.00        
-hands_using_wheel/both 0.00         0.00         0.00        
+hands_using_wheel/both 74.02        76.64        75.30       
 hands_using_wheel/none 0.00         0.00         0.00        
-hands_using_wheel/only_left 83.07        85.38        84.21       
-hands_using_wheel/only_right 0.00         0.00         0.00        
+hands_using_wheel/only_left 96.47        93.32        94.87       
+hands_using_wheel/only_right 84.64        95.81        89.88       
 talking/talking      0.00         0.00         0.00        
 
 ==================================================
 DIAGNOSTIC INFORMATION
 ==================================================
-Total predictions generated: 4918
-Total ground truth intervals: 1678
-Videos processed: 8
-Frame coverage: 99.82% (78688/78830)
+Total predictions generated: 2511
+Total ground truth intervals: 986
+Videos processed: 4
+Frame coverage: 99.81% (40176/40254)
 
 Class Distribution:
 Class                GT Count     Pred Count   Ratio       
 ------------------------------------------------------------
-driver_actions/change_gear 785          0            0.00        
-driver_actions/drinking 3385         0            0.00        
-driver_actions/hair_and_makeup 3977         0            0.00        
-driver_actions/phonecall_left 9956         0            0.00        
-driver_actions/phonecall_right 11299        0            0.00        
-driver_actions/radio 1905         0            0.00        
-driver_actions/reach_backseat 808          0            0.00        
-driver_actions/reach_side 10142        0            0.00        
-driver_actions/safe_drive 25257        0            0.00        
-driver_actions/talking_to_passenger 836          0            0.00        
-driver_actions/texting_left 4344         0            0.00        
-driver_actions/texting_right 4327         0            0.00        
-driver_actions/unclassified 1674         0            0.00        
-gaze_on_road/looking_road 68440        78688        1.15        
-gaze_on_road/not_looking_road 10388        0            0.00        
-hand_on_gear/hand_on_gear 4807         0            0.00        
-hands_using_wheel/both 19537        0            0.00        
-hands_using_wheel/none 715          0            0.00        
-hands_using_wheel/only_left 44106        45328        1.03        
-hands_using_wheel/only_right 14290        0            0.00        
-talking/talking      14888        0            0.00        
+driver_actions/change_gear 573          0            0.00        
+driver_actions/drinking 1630         0            0.00        
+driver_actions/hair_and_makeup 1788         0            0.00        
+driver_actions/phonecall_left 5310         6768         1.27        
+driver_actions/phonecall_right 6346         7232         1.14        
+driver_actions/radio 1032         0            0.00        
+driver_actions/reach_backseat 335          0            0.00        
+driver_actions/reach_side 4715         6080         1.29        
+driver_actions/safe_drive 12669        9424         0.74        
+driver_actions/talking_to_passenger 402          0            0.00        
+driver_actions/texting_left 2103         0            0.00        
+driver_actions/texting_right 2396         0            0.00        
+driver_actions/unclassified 855          0            0.00        
+gaze_on_road/looking_road 34668        40176        1.16        
+gaze_on_road/not_looking_road 5586         0            0.00        
+hand_on_gear/hand_on_gear 4613         0            0.00        
+hands_using_wheel/both 8051         8336         1.04        
+hands_using_wheel/none 393          0            0.00        
+hands_using_wheel/only_left 24265        23472        0.97        
+hands_using_wheel/only_right 7449         8432         1.13        
+talking/talking      9791         0            0.00        
 
 Video-wise Coverage:
 Video                          GT Frames    Coverage    
 ------------------------------------------------------------
-gA_1_s2_2019-03-08T09;21;03+   13641        99.93%      
-gA_1_s1_2019-03-08T09;31;15+   6777         99.63%      
-gA_1_s3_2019-03-14T14;31;08+   1845         98.86%      
-gA_1_s4_2019-03-22T11;49;58+   16313        99.94%      
 gA_2_s3_2019-03-13T09;23;42+   1863         98.77%      
 gA_2_s4_2019-03-22T09;15;55+   16220        99.93%      
 gA_2_s1_2019-03-08T10;01;44+   7481         99.67%      
-gA_2_s2_2019-03-08T09;50;49+   14690        99.88%  
+gA_2_s2_2019-03-08T09;50;49+   14690        99.88%      
+
+Results saved to: keypoint_body_metrics_results.json

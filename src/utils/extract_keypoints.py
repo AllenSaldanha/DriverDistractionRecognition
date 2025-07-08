@@ -47,6 +47,6 @@ def extract_and_save_keypoints(root_dir, output_folder, device=None):
         print(f"Saved keypoints for {total_frames} frames to {out_dir}")
 
 if __name__ == "__main__":
-    root_dir = "./dataset/dmd/gC"
-    output_folder = "./keypoints/gC/body"
+    root_dir = "./dataset/dmd/gA/5"
+    output_folder = "./keypoints/metrics/gA/body"
     extract_and_save_keypoints(root_dir, output_folder)

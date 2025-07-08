@@ -1,0 +1,85 @@
+Found 4 video-annotation pairs
+Loading model from ./best_keypoint_body_lstm_model.pth...
+Loaded lstm model with 21 classes
+Model parameters: 2,300,181
+Generating predictions...
+Generated 2267 predictions
+Evaluating keypoint model performance...
+
+==================================================
+KEYPOINT MODEL EVALUATION RESULTS
+==================================================
+
+Overall Metrics:
+  Precision: 78.44%
+  Recall: 69.41%
+  F1-Score: 73.65%
+  Mean IoU: 64.66%
+
+Per-Class Metrics:
+Class                Precision    Recall       F1-Score    
+------------------------------------------------------------
+driver_actions/change_gear 0.00         0.00         0.00        
+driver_actions/drinking 0.00         0.00         0.00        
+driver_actions/hair_and_makeup 0.00         0.00         0.00        
+driver_actions/phonecall_left 59.15        77.84        67.22       
+driver_actions/phonecall_right 59.73        34.39        43.65       
+driver_actions/radio 0.00         0.00         0.00        
+driver_actions/reach_backseat 0.00         0.00         0.00        
+driver_actions/reach_side 55.02        71.81        62.30       
+driver_actions/safe_drive 79.10        84.46        81.69       
+driver_actions/talking_to_passenger 0.00         0.00         0.00        
+driver_actions/texting_left 0.00         0.00         0.00        
+driver_actions/texting_right 0.00         0.00         0.00        
+driver_actions/unclassified 0.00         0.00         0.00        
+gaze_on_road/looking_road 80.56        99.77        89.14       
+gaze_on_road/not_looking_road 0.00         0.00         0.00        
+hand_on_gear/hand_on_gear 0.00         0.00         0.00        
+hands_using_wheel/both 77.31        83.39        80.23       
+hands_using_wheel/none 0.00         0.00         0.00        
+hands_using_wheel/only_left 88.65        90.39        89.51       
+hands_using_wheel/only_right 84.67        80.87        82.72       
+talking/talking      0.00         0.00         0.00        
+
+==================================================
+DIAGNOSTIC INFORMATION
+==================================================
+Total predictions generated: 2267
+Total ground truth intervals: 966
+Videos processed: 4
+Frame coverage: 99.78% (36272/36352)
+
+Class Distribution:
+Class                GT Count     Pred Count   Ratio       
+------------------------------------------------------------
+driver_actions/change_gear 1231         0            0.00        
+driver_actions/drinking 1298         0            0.00        
+driver_actions/hair_and_makeup 1142         0            0.00        
+driver_actions/phonecall_left 4012         5280         1.32        
+driver_actions/phonecall_right 4141         2384         0.58        
+driver_actions/radio 457          0            0.00        
+driver_actions/reach_backseat 201          0            0.00        
+driver_actions/reach_side 4474         5840         1.31        
+driver_actions/safe_drive 13396        14304        1.07        
+driver_actions/talking_to_passenger 139          0            0.00        
+driver_actions/texting_left 2613         0            0.00        
+driver_actions/texting_right 2160         0            0.00        
+driver_actions/unclassified 1033         0            0.00        
+gaze_on_road/looking_road 29289        36272        1.24        
+gaze_on_road/not_looking_road 7063         0            0.00        
+hand_on_gear/hand_on_gear 1691         0            0.00        
+hands_using_wheel/both 12075        13024        1.08        
+hands_using_wheel/none 454          0            0.00        
+hands_using_wheel/only_left 15817        16128        1.02        
+hands_using_wheel/only_right 7907         7552         0.96        
+talking/talking      3307         0            0.00        
+
+Video-wise Coverage:
+Video                          GT Frames    Coverage    
+------------------------------------------------------------
+gA_5_s2_2019-03-08T10;46;46+   12416        99.74%      
+gA_5_s1_2019-03-08T10;57;00+   7009         99.76%      
+gA_5_s3_2019-03-13T09;10;35+   1836         99.35%      
+gA_5_s4_2019-03-22T11;28;00+   15091        99.87%      
+
+Results saved to: keypoint_body_metrics_results_two.json

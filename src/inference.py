@@ -72,8 +72,8 @@ def inference(pair, model_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Driver Activity Inference")
-    parser.add_argument("--root_dir", default = "./dataset/dmd/gA/2", type=str, help="Path to dataset root")
-    parser.add_argument("--model_path", default="final_model.pth", type=str, help="Path to trained model (.pth)")
+    parser.add_argument("--root_dir", default = "./dataset/dmd/gA/5", type=str, help="Path to dataset root")
+    parser.add_argument("--model_path", default="best_model.pth", type=str, help="Path to trained model (.pth)")
     
     args = parser.parse_args()
 
